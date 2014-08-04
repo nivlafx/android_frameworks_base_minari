@@ -37,13 +37,15 @@ import androidx.annotation.Nullable;
 
 import com.android.settingslib.Utils;
 import com.android.systemui.R;
+import com.android.systemui.Dependency;
+import com.android.systemui.tuner.TunerService;
 
 import lineageos.providers.LineageSettings;
 
 /**
  * Viewgroup for the bouncer numpad button, specifically for digits.
  */
-public class NumPadKey extends ViewGroup implements NumPadAnimationListener {
+public class NumPadKey extends ViewGroup implements NumPadAnimationListener, TunerService.Tunable {
     // list of "ABC", etc per digit, starting with '0'
     static String sKlondike[];
 
@@ -55,6 +57,9 @@ public class NumPadKey extends ViewGroup implements NumPadAnimationListener {
     private int mTextViewResId;
     private PasswordTextView mTextView;
     private boolean mAnimationsEnabled = true;
+    
+    private final String LOCKSCREEN_PIN_SCRAMBLE_LAYOUT = "system:lockscreen_pin_scramble_layout";
+    private boolean mScramblePin;
 
     @Nullable
     private NumPadAnimator mAnimator;
@@ -129,6 +134,18 @@ public class NumPadKey extends ViewGroup implements NumPadAnimationListener {
         } else {
             mAnimator = null;
         }
+        Dependency.get(TunerService.class).addTunable(this, LOCKSCREEN_PIN_SCRAMBLE_LAYOUT);
+    }
+
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        switch (key) {
+            case LOCKSCREEN_PIN_SCRAMBLE_LAYOUT:
+                mScramblePin = TunerService.parseIntegerSwitch(newValue, false);
+                break;
+            default:
+                break;
+        }
     }
 
     public void setDigit(int digit) {
@@ -137,8 +154,6 @@ public class NumPadKey extends ViewGroup implements NumPadAnimationListener {
     }
 
     private void updateText() {
-       boolean scramblePin = (LineageSettings.System.getInt(getContext().getContentResolver(),
-                LineageSettings.System.LOCKSCREEN_PIN_SCRAMBLE_LAYOUT, 0) == 1);
         if (mDigit >= 0) {
             mDigitText.setText(Integer.toString(mDigit));
             if (sKlondike == null) {
@@ -147,7 +162,7 @@ public class NumPadKey extends ViewGroup implements NumPadAnimationListener {
             if (sKlondike != null && sKlondike.length > mDigit) {
                 String klondike = sKlondike[mDigit];
                 final int len = klondike.length();
-                if (len > 0 || scramblePin) {
+                if (len > 0  || mScramblePin) {
                     mKlondikeText.setText(klondike);
                 } else if (mKlondikeText.getVisibility() != View.GONE) {
                     mKlondikeText.setVisibility(View.INVISIBLE);
