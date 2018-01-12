@@ -64,6 +64,12 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks {
     private final CommandQueue mCommandQueue;
     private final StatusBarContentInsetsProvider mContentInsetsProvider;
 
+    private final int mStatusBarPaddingX;
+    private final int mStatusBarPaddingY;
+    private View mStatusBarContents;
+    private int mStatusbarDefaultPaddingStart;
+    private int mStatusbarDefaultPaddingEnd;
+
     private DarkReceiver mBattery;
     private Clock mClock;
     private int mRotationOrientation = -1;
@@ -87,6 +93,11 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks {
         super(context, attrs);
         mCommandQueue = Dependency.get(CommandQueue.class);
         mContentInsetsProvider = Dependency.get(StatusBarContentInsetsProvider.class);
+
+        mStatusBarPaddingX = context.getResources().getDimensionPixelSize(
+                R.dimen.statusbar_burn_in_prevention_padding_x_max);
+        mStatusBarPaddingY = context.getResources().getDimensionPixelSize(
+                R.dimen.statusbar_burn_in_prevention_padding_y_max);
 
         // Only create FRB here if there is no navbar
         if (!hasNavigationBar()) {
@@ -148,6 +159,9 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks {
         mBattery = findViewById(R.id.battery);
         mClock = findViewById(R.id.clock);
         mCutoutSpace = findViewById(R.id.cutout_space_view);
+        mStatusBarContents = findViewById(R.id.status_bar_contents);
+        mStatusbarDefaultPaddingStart = mStatusBarContents.getPaddingStart();
+        mStatusbarDefaultPaddingEnd = mStatusBarContents.getPaddingEnd();
 
         updateResources();
     }
@@ -355,5 +369,29 @@ public class PhoneStatusBarView extends FrameLayout implements Callbacks {
                 getPaddingTop(),
                 insets.second,
                 getPaddingBottom());
+    }
+
+    /**
+     *  Moves the Status bar to prevent burn in, called if
+     *  config_enableMoveSystemBars is enabled
+     */
+    public final void moveStatusBar() {
+        if (mStatusBarContents == null) {
+            return;
+        }
+
+        int statusBarPaddingX = (int) (Math.random() * mStatusBarPaddingX);
+        int statusBarPaddingY = (int) (Math.random() * mStatusBarPaddingY);
+
+        // Move StatusBar to right-down side or left-up side with a half probability
+        if ((System.currentTimeMillis() % 2) > 0) {
+            mStatusBarContents.setPaddingRelative(
+                    mStatusbarDefaultPaddingStart + statusBarPaddingX, statusBarPaddingY,
+                    mStatusbarDefaultPaddingEnd - statusBarPaddingX, -statusBarPaddingY);
+        } else {
+            mStatusBarContents.setPaddingRelative(
+                    mStatusbarDefaultPaddingStart - statusBarPaddingX, -statusBarPaddingY,
+                    mStatusbarDefaultPaddingEnd + statusBarPaddingX, statusBarPaddingY);
+        }
     }
 }
