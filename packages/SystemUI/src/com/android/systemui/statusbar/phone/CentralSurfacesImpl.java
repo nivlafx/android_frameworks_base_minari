@@ -263,6 +263,8 @@ import com.android.wm.shell.startingsurface.StartingSurface;
 
 import dagger.Lazy;
 
+import lineageos.providers.LineageSettings;
+
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.List;
@@ -302,6 +304,9 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
             "com.android.systemui.statusbar.banner_action_cancel";
     private static final String BANNER_ACTION_SETUP =
             "com.android.systemui.statusbar.banner_action_setup";
+
+    private static final String FORCE_SHOW_NAVBAR =
+            "lineagesystem:" + LineageSettings.System.FORCE_SHOW_NAVBAR;
 
     private static final int MSG_OPEN_SETTINGS_PANEL = 1002;
     private static final int MSG_LAUNCH_TRANSITION_TIMEOUT = 1003;
@@ -526,6 +531,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
     private final WallpaperManager mWallpaperManager;
     private final UserTracker mUserTracker;
     private final Provider<FingerprintManager> mFingerprintManager;
+    private final TunerService mTunerService;
     private final ActivityStarter mActivityStarter;
 
     private GameSpaceManager mGameSpaceManager;
@@ -808,6 +814,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
             AlternateBouncerInteractor alternateBouncerInteractor,
             UserTracker userTracker,
             Provider<FingerprintManager> fingerprintManager,
+            TunerService tunerService,
             ActivityStarter activityStarter
     ) {
         mContext = context;
@@ -906,6 +913,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
         mAlternateBouncerInteractor = alternateBouncerInteractor;
         mUserTracker = userTracker;
         mFingerprintManager = fingerprintManager;
+        mTunerService = tunerService;
         mActivityStarter = activityStarter;
         mPulseController = new PulseControllerImpl(mContext, this,
                 mCommandQueue, mUiBgExecutor, mConfigurationController);
@@ -988,8 +996,20 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
 
         mColorExtractor.addOnColorsChangedListener(mOnColorsChangedListener);
 
-        Dependency.get(TunerService.class).addTunable(this, QS_TRANSPARENCY);
-        Dependency.get(TunerService.class).addTunable(this, PULSE_ON_NEW_TRACKS);
+        mNeedsNavigationBar = mContext.getResources().getBoolean(
+                com.android.internal.R.bool.config_showNavigationBar);
+        // Allow a system property to override this. Used by the emulator.
+        // See also hasNavigationBar().
+        String navBarOverride = SystemProperties.get("qemu.hw.mainkeys");
+        if ("1".equals(navBarOverride)) {
+            mNeedsNavigationBar = false;
+        } else if ("0".equals(navBarOverride)) {
+            mNeedsNavigationBar = true;
+        }
+
+        mTunerService.addTunable(this, QS_TRANSPARENCY);
+        mTunerService.addTunable(this, PULSE_ON_NEW_TRACKS);
+        mTunerService.addTunable(this, FORCE_SHOW_NAVBAR);
 
         mWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
 
@@ -3325,6 +3345,7 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
     protected KeyguardManager mKeyguardManager;
     private final DeviceProvisionedController mDeviceProvisionedController;
 
+    private boolean mNeedsNavigationBar;
     private final NavigationBarController mNavigationBarController;
     private final AccessibilityFloatingMenuController mAccessibilityFloatingMenuController;
 
@@ -3514,6 +3535,23 @@ public class CentralSurfacesImpl implements CoreStartable, CentralSurfaces, Tune
 
     @Override
     public void onTuningChanged(String key, String newValue) {
+    
+        if (FORCE_SHOW_NAVBAR.equals(key) && mDisplayId == Display.DEFAULT_DISPLAY &&
+                mWindowManagerService != null) {
+            boolean forcedVisibility = mNeedsNavigationBar ||
+                    TunerService.parseIntegerSwitch(newValue, false);
+            boolean hasNavbar = getNavigationBarView() != null;
+            if (forcedVisibility) {
+                if (!hasNavbar) {
+                    mNavigationBarController.onDisplayReady(mDisplayId);
+                }
+            } else {
+                if (hasNavbar) {
+                    mNavigationBarController.onDisplayRemoved(mDisplayId);
+                }
+            }
+        }
+
         switch (key) {
             case QS_TRANSPARENCY:
                 mScrimController.setCustomScrimAlpha(
