@@ -6118,6 +6118,27 @@ public final class Settings {
         public static final String SMART_PIXELS_ON_POWER_SAVE = "smart_pixels_on_power_save";
 
         /**
+         * @hide
+         * Display style of the status bar battery information
+         * 0: Display the battery an icon in portrait mode
+         * 1: Display the battery as a circle
+         * 2: Display the battery as plain text
+         * default: 0
+         * @hide
+         */
+        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
+
+        /**
+         * Status bar battery %
+         * 0: Hide the battery percentage
+         * 1: Display the battery percentage inside the icon
+         * 2: Display the battery percentage next to the icon
+         * @hide
+         */
+        public static final String STATUS_BAR_SHOW_BATTERY_PERCENT =
+                "status_bar_show_battery_percent";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
@@ -6250,6 +6271,8 @@ public final class Settings {
             PRIVATE_SETTINGS.add(LOCKSCREEN_ALBUMART_FILTER);
             PRIVATE_SETTINGS.add(LS_MEDIA_FILTER_BLUR_RADIUS);
             PRIVATE_SETTINGS.add(LS_MEDIA_ARTWORK_FADE_PERCENT);
+            PRIVATE_SETTINGS.add(STATUS_BAR_BATTERY_STYLE);
+            PRIVATE_SETTINGS.add(STATUS_BAR_SHOW_BATTERY_PERCENT);
         }
 
         /**
