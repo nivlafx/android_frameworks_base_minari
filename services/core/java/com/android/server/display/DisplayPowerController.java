@@ -1711,7 +1711,7 @@ final class DisplayPowerController implements AutomaticBrightnessController.Call
                     mLastUserSetScreenBrightness,
                     userSetBrightnessChanged, autoBrightnessAdjustment,
                     autoBrightnessAdjustmentChanged, mPowerRequest.policy,
-                    mShouldResetShortTermModel);
+                    mShouldResetShortTermModel, false);
             mShouldResetShortTermModel = false;
         }
         mBrightnessRangeController.setAutoBrightnessEnabled(autoBrightnessEnabled
