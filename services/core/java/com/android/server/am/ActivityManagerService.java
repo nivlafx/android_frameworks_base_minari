@@ -20296,4 +20296,8 @@ public class ActivityManagerService extends IActivityManager.Stub
                 info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED 
                 || !mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(info.packageName);
     }
+
+    public boolean shouldForceCutoutFullscreen(String packageName) {
+        return mActivityTaskManager.shouldForceCutoutFullscreen(packageName);
+    }
 }

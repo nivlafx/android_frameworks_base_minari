@@ -6166,6 +6166,12 @@ public final class Settings {
         public static final String LESS_BORING_HEADS_UP = "less_boring_heads_up";
 
         /**
+         * Force full screen for devices with cutout
+         * @hide
+         */
+        public static final String FORCE_FULLSCREEN_CUTOUT_APPS = "force_full_screen_cutout_apps";
+
+        /**
          * Keys we no longer back up under the current schema, but want to continue to
          * process when restoring historical backup datasets.
          *
@@ -6297,6 +6303,7 @@ public final class Settings {
             PRIVATE_SETTINGS.add(LOCKSCREEN_ALBUMART_FILTER);
             PRIVATE_SETTINGS.add(LS_MEDIA_FILTER_BLUR_RADIUS);
             PRIVATE_SETTINGS.add(LS_MEDIA_ARTWORK_FADE_PERCENT);
+            PRIVATE_SETTINGS.add(FORCE_FULLSCREEN_CUTOUT_APPS);
         }
 
         /**
