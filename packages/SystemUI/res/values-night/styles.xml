@@ -25,7 +25,7 @@
         <item name="android:windowIsFloating">true</item>
     </style>
 
-    <style name="Theme.SystemUI.QuickSettings" parent="@*android:style/Theme.DeviceDefault.SystemUI">
+    <style name="Theme.SystemUI.QuickSettings" parent="@style/Theme.DeviceDefault.SystemUI">
         <item name="isQsTheme">true</item>
         <item name="lightIconTheme">@style/QSIconTheme</item>
         <item name="darkIconTheme">@style/QSIconTheme</item>
