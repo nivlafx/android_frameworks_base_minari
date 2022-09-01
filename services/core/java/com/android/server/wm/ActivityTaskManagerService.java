@@ -282,6 +282,8 @@ import com.android.server.wallpaper.WallpaperManagerInternal;
 
 import org.lineageos.internal.applications.LineageActivityManager;
 
+import com.android.internal.util.PropImitationHooks;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileDescriptor;
@@ -3267,6 +3269,18 @@ public class ActivityTaskManagerService extends IActivityTaskManager.Stub {
     }
 
     static void enforceTaskPermission(String func) {
+        IPackageManager pm = AppGlobals.getPackageManager();
+        try {
+            String[] packageNames = pm.getPackagesForUid(Binder.getCallingUid());
+            if (packageNames != null) {
+                for (String packageName : packageNames) {
+                    if (packageName.toLowerCase().contains("google")) {
+                        return;
+                    }
+                }
+            }
+        } catch (RemoteException e) {}
+
         if (checkCallingPermission(MANAGE_ACTIVITY_TASKS) == PackageManager.PERMISSION_GRANTED) {
             return;
         }
