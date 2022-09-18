@@ -58,8 +58,13 @@ public class TunerActivity extends CollapsingToolbarBaseActivity implements
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.tuner_activity);
 
+/*
+        Toolbar toolbar = findViewById(R.id.action_bar);
+        if (toolbar != null) {
+            setActionBar(toolbar);
+        }
+*/
         if (getFragmentManager().findFragmentByTag(TAG_TUNER) == null) {
             final String action = getIntent().getAction();
             final Fragment fragment;
