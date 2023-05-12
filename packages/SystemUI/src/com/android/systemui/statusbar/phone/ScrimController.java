@@ -26,6 +26,7 @@ import android.animation.ValueAnimator;
 import android.annotation.IntDef;
 import android.app.AlarmManager;
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.provider.Settings;
 import android.os.Handler;
@@ -265,6 +266,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
     private boolean mWallpaperSupportsAmbientMode;
     private boolean mScreenOn;
     private boolean mTransparentScrimBackground;
+    private boolean mIsLandscape;
 
     // Scrim blanking callbacks
     private Runnable mPendingFrameCallback;
@@ -285,7 +287,10 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                 mScrimInFront.setViewAlpha(mInFrontAlpha);
 
                 mNotificationsAlpha = alphas.getNotificationsAlpha();
-                mNotificationsScrim.setViewAlpha(mNotificationsAlpha);
+                mNotificationsScrim.setViewAlpha(mIsLandscape ? 0 : mNotificationsAlpha);
+                if (mIsLandscape && mNotificationsScrim != null) {
+                    mNotificationsScrim.setVisibility(View.GONE);
+                }
 
                 mBehindAlpha = alphas.getBehindAlpha();
                 mScrimBehind.setViewAlpha(mBehindAlpha);
@@ -352,6 +357,13 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
             public void onUiModeChanged() {
                 ScrimController.this.onThemeChanged();
             }
+
+            @Override
+            public void onConfigChanged(Configuration newConfig) {
+                int orientation = newConfig.orientation;
+                mIsLandscape = orientation == Configuration.ORIENTATION_LANDSCAPE;
+                ScrimController.this.onThemeChanged();
+            }
         });
         mColors = new GradientColors();
         mPrimaryBouncerToGoneTransitionViewModel = primaryBouncerToGoneTransitionViewModel;
@@ -383,6 +395,9 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
 
         behindScrim.enableBottomEdgeConcave(mClipsQsScrim);
         mNotificationsScrim.enableRoundedCorners(true);
+        if (mIsLandscape && mNotificationsScrim != null) {
+            mNotificationsScrim.setVisibility(View.GONE);
+        }
 
         if (mScrimBehindChangeRunnable != null) {
             mScrimBehind.setChangeRunnable(mScrimBehindChangeRunnable, mMainExecutor);
@@ -452,8 +467,9 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
         if (mScrimBehind == null || mNotificationsScrim == null) {
             return;
         }
-        mScrimBehind.setCornerRadius(radius);
-        mNotificationsScrim.setCornerRadius(radius);
+        int cornerRadius = mCustomScrimAlpha < 1f ? 0 : radius;
+        mScrimBehind.setCornerRadius(cornerRadius);
+        mNotificationsScrim.setCornerRadius(cornerRadius);
     }
 
     void setScrimVisibleListener(Consumer<Integer> listener) {
@@ -914,11 +930,9 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                     mBehindAlpha = mCustomScrimAlpha;
                     mNotificationsAlpha = behindFraction * mCustomScrimAlpha;
                 } else {
-                    mBehindAlpha = mLargeScreenShadeInterpolator.getBehindScrimAlpha(
-                            mPanelExpansionFraction * mDefaultScrimAlpha);
+                    mBehindAlpha = mPanelExpansionFraction * mCustomScrimAlpha;
                     mNotificationsAlpha =
-                            mLargeScreenShadeInterpolator.getNotificationScrimAlpha(
-                                    mPanelExpansionFraction);
+                            mPanelExpansionFraction * mCustomScrimAlpha;
                 }
                 mBehindTint = mState.getBehindTint();
                 mInFrontAlpha = 0;
@@ -1174,7 +1188,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
 
         setScrimAlpha(mScrimInFront, mInFrontAlpha);
         setScrimAlpha(mScrimBehind, mBehindAlpha);
-        setScrimAlpha(mNotificationsScrim, mNotificationsAlpha);
+        setScrimAlpha(mNotificationsScrim, mIsLandscape ? 0 : mNotificationsAlpha);
 
         // The animation could have all already finished, let's call onFinished just in case
         onFinished(mState);
@@ -1315,7 +1329,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
         } else if (scrim == mScrimBehind) {
             return mBehindAlpha;
         } else if (scrim == mNotificationsScrim) {
-            return mNotificationsAlpha;
+            return mIsLandscape? 0 : mNotificationsAlpha;
         } else {
             throw new IllegalArgumentException("Unknown scrim view");
         }
@@ -1388,7 +1402,7 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
             mNotificationsTint = mState.getNotifTint();
             updateScrimColor(mScrimInFront, mInFrontAlpha, mInFrontTint);
             updateScrimColor(mScrimBehind, mBehindAlpha, mBehindTint);
-            updateScrimColor(mNotificationsScrim, mNotificationsAlpha, mNotificationsTint);
+            updateScrimColor(mNotificationsScrim, mIsLandscape ? 0 : mNotificationsAlpha, mNotificationsTint);
         }
     }
 
@@ -1505,24 +1519,18 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
     }
 
     private void updateThemeColors() {
-        if (mScrimBehind == null) return;
+        if (mScrimBehind == null || mColors == null) return;
         Context context = mScrimBehind.getContext();
         if (context == null) return;
-        int background = Utils.getColorAttr(context, android.R.attr.colorBackgroundFloating).getDefaultColor();
-        int accent = Utils.getColorAccent(context).getDefaultColor();
+        int background = Utils.getColorAttr(context,
+                android.R.attr.colorBackgroundFloating).getDefaultColor();
         int surfaceBackground = Utils.getColorAttr(context, R.attr.colorSurfaceHeader).getDefaultColor();
+        int accent = Utils.getColorAccent(context).getDefaultColor();
+
         mColors.setMainColor(background);
         mColors.setSecondaryColor(accent);
-        mBehindColors.setMainColor(surfaceBackground);
-        mBehindColors.setSecondaryColor(accent);
-        boolean isBehindBgDark = mUseNewLightBarLogic ?
-                !ContrastColorUtil.isColorDark(surfaceBackground) :
-                calculateContrast(surfaceBackground);
-        mBehindColors.setSupportsDarkText(isBehindBgDark);
-        boolean isBgDark = mUseNewLightBarLogic ?
-                !ContrastColorUtil.isColorDark(background) :
-                calculateContrast(background);
-        mColors.setSupportsDarkText(isBgDark);
+        final boolean isBackgroundLight = !ContrastColorUtil.isColorDark(background);
+        mColors.setSupportsDarkText(isBackgroundLight);
 
         int surface = Utils.getColorAttr(mScrimBehind.getContext(),
                 com.android.internal.R.attr.materialColorSurface).getDefaultColor();
@@ -1530,16 +1538,13 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
             state.setSurfaceColor(surface);
         }
 
-        mBehindColors.setMainColor(surfaceBackground);
+        int mainColor = mIsLandscape ? background : (mCustomScrimAlpha < 1f ? background : surfaceBackground);
+        mBehindColors.setMainColor(mainColor);
         mBehindColors.setSecondaryColor(accent);
-        mBehindColors.setSupportsDarkText(
-                ColorUtils.calculateContrast(mBehindColors.getMainColor(), Color.WHITE) > 4.5);
+        boolean isBehindBgDark = !ContrastColorUtil.isColorDark(surfaceBackground);
+        mBehindColors.setSupportsDarkText(isBehindBgDark);
 
         mNeedsDrawableColorUpdate = true;
-    }
-
-    private boolean calculateContrast(int color) {
-        return ColorUtils.calculateContrast(color, Color.WHITE) > 4.5;
     }
 
     private void onThemeChanged() {
