@@ -19,11 +19,17 @@ package android.filterfw.geometry;
 
 import android.compat.annotation.UnsupportedAppUsage;
 
+import android.util.SparseArray;
+import java.util.Map;
+
 /**
  * @hide
  */
 public class Point {
 
+    private static final SparseArray<Float> cosCache = new SparseArray<>();
+    private static final SparseArray<Float> sinCache = new SparseArray<>();
+    
     @UnsupportedAppUsage
     public float x;
     @UnsupportedAppUsage
@@ -101,9 +107,28 @@ public class Point {
     }
 
     public Point rotated(float radians) {
-        // TODO(renn): Optimize: Keep cache of cos/sin values
-        return new Point((float)(Math.cos(radians) * x - Math.sin(radians) * y),
-                         (float)(Math.sin(radians) * x + Math.cos(radians) * y));
+        float cosVal, sinVal;
+        int key = toSparseArrayKey(radians);
+
+        if (cosCache.get(key) != null) {
+            cosVal = cosCache.get(key);
+        } else {
+            cosVal = (float) Math.cos(radians);
+            cosCache.put(key, cosVal);
+        }
+
+        if (sinCache.get(key) != null) {
+            sinVal = sinCache.get(key);
+        } else {
+            sinVal = (float) Math.sin(radians);
+            sinCache.put(key, sinVal);
+        }
+
+        return new Point(cosVal * x - sinVal * y, sinVal * x + cosVal * y);
+    }
+
+    private int toSparseArrayKey(float radians) {
+        return (int)(radians * 10000);
     }
 
     public Point rotatedAround(Point center, float radians) {
