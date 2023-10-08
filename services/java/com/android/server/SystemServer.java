@@ -228,6 +228,8 @@ import com.android.server.wm.WindowManagerService;
 
 import dalvik.system.VMRuntime;
 
+import org.rising.server.QuickSwitchService;
+
 import java.io.File;
 import java.io.FileDescriptor;
 import java.io.IOException;
@@ -440,6 +442,9 @@ public final class SystemServer implements Dumpable {
             "com.android.server.devicelock.DeviceLockService";
     private static final String DEVICE_LOCK_APEX_PATH =
             "/apex/com.android.devicelock/javalib/service-devicelock.jar";
+            
+    private static final String QUICKSWITCH_SERVICE_CLASS =
+            "org.rising.server.QuickSwitchService";
 
     private static final String TETHERING_CONNECTOR_CLASS = "android.net.ITetheringConnector";
 
@@ -2885,6 +2890,10 @@ public final class SystemServer implements Dumpable {
 
         t.traceBegin("AppCompatOverridesService");
         mSystemServiceManager.startService(APP_COMPAT_OVERRIDES_SERVICE_CLASS);
+        t.traceEnd();
+
+        t.traceBegin("StartQuickSwitchService");
+        mSystemServiceManager.startService(QUICKSWITCH_SERVICE_CLASS);
         t.traceEnd();
 
         t.traceBegin("HealthConnectManagerService");
