@@ -25,6 +25,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.IntDef;
 import android.app.AlarmManager;
+import android.content.Context;
 import android.graphics.Color;
 import android.provider.Settings;
 import android.os.Handler;
@@ -1505,16 +1506,23 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
 
     private void updateThemeColors() {
         if (mScrimBehind == null) return;
-        int background = Utils.getColorAttr(mScrimBehind.getContext(),
-                android.R.attr.colorBackgroundFloating).getDefaultColor();
-        int surfaceBackground = Utils.getColorAttr(mScrimBehind.getContext(),
-                R.attr.colorSurfaceHeader).getDefaultColor();
-        int accent = Utils.getColorAccent(mScrimBehind.getContext()).getDefaultColor();
-
+        Context context = mScrimBehind.getContext();
+        if (context == null) return;
+        int background = Utils.getColorAttr(context, android.R.attr.colorBackgroundFloating).getDefaultColor();
+        int accent = Utils.getColorAccent(context).getDefaultColor();
+        int surfaceBackground = Utils.getColorAttr(context, R.attr.colorSurfaceHeader).getDefaultColor();
         mColors.setMainColor(background);
         mColors.setSecondaryColor(accent);
-        final boolean isBackgroundLight = !ContrastColorUtil.isColorDark(background);
-        mColors.setSupportsDarkText(isBackgroundLight);
+        mBehindColors.setMainColor(surfaceBackground);
+        mBehindColors.setSecondaryColor(accent);
+        boolean isBehindBgDark = mUseNewLightBarLogic ?
+                !ContrastColorUtil.isColorDark(surfaceBackground) :
+                calculateContrast(surfaceBackground);
+        mBehindColors.setSupportsDarkText(isBehindBgDark);
+        boolean isBgDark = mUseNewLightBarLogic ?
+                !ContrastColorUtil.isColorDark(background) :
+                calculateContrast(background);
+        mColors.setSupportsDarkText(isBgDark);
 
         int surface = Utils.getColorAttr(mScrimBehind.getContext(),
                 com.android.internal.R.attr.materialColorSurface).getDefaultColor();
@@ -1528,6 +1536,10 @@ public class ScrimController implements ViewTreeObserver.OnPreDrawListener, Dump
                 ColorUtils.calculateContrast(mBehindColors.getMainColor(), Color.WHITE) > 4.5);
 
         mNeedsDrawableColorUpdate = true;
+    }
+
+    private boolean calculateContrast(int color) {
+        return ColorUtils.calculateContrast(color, Color.WHITE) > 4.5;
     }
 
     private void onThemeChanged() {
