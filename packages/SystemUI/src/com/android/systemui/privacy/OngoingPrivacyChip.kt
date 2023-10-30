@@ -17,6 +17,7 @@ package com.android.systemui.privacy
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.content.res.ColorStateList
 import android.util.AttributeSet
 import android.view.Gravity.CENTER_VERTICAL
 import android.view.Gravity.END
@@ -117,13 +118,12 @@ class OngoingPrivacyChip @JvmOverloads constructor(
         }
     }
 
-    private fun updateResources() {
+    fun updateResources() {
         iconMargin = context.resources
                 .getDimensionPixelSize(R.dimen.ongoing_appops_chip_icon_margin)
         iconSize = context.resources
                 .getDimensionPixelSize(R.dimen.ongoing_appops_chip_icon_size)
-        iconColor =
-                Utils.getColorAttrDefaultColor(context, android.R.attr.textColorPrimaryInverse)
+        iconColor = Utils.getColorAttrDefaultColor(context, com.android.internal.R.attr.textColorPrimaryInverse)
 
         val height = context.resources
                 .getDimensionPixelSize(R.dimen.ongoing_appops_chip_height)
@@ -131,6 +131,10 @@ class OngoingPrivacyChip @JvmOverloads constructor(
                 .getDimensionPixelSize(R.dimen.ongoing_appops_chip_side_padding)
         iconsContainer.layoutParams.height = height
         iconsContainer.setPaddingRelative(padding, 0, padding, 0)
+        iconsContainer.background = context.getDrawable(R.drawable.statusbar_privacy_chip_bg)
+        
+        val backgroundTint = Utils.getColorAttrDefaultColor(context, com.android.internal.R.attr.colorAccent)
+        iconsContainer.backgroundTintList = ColorStateList.valueOf(backgroundTint)
         iconsContainer.background = context.getDrawable(R.drawable.statusbar_privacy_chip_bg)
     }
 }
