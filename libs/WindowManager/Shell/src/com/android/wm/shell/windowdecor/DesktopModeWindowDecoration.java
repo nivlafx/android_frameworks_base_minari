@@ -182,8 +182,10 @@ public class DesktopModeWindowDecoration extends WindowDecoration<WindowDecorLin
         mRelayoutParams.mShadowRadiusId = shadowRadiusID;
         mRelayoutParams.mApplyStartTransactionOnDraw = applyStartTransactionOnDraw;
 
-        mRelayoutParams.mCornerRadius =
-                (int) ScreenDecorationsUtils.getWindowCornerRadius(mContext);
+        final float scale = mContext.getResources().getDisplayMetrics().density;
+        final int cornerRadiusPx = (int) (28 * scale + 0.5f);
+        mRelayoutParams.mCornerRadius = cornerRadiusPx;
+
         relayout(mRelayoutParams, startT, finishT, wct, oldRootView, mResult);
         // After this line, mTaskInfo is up-to-date and should be used instead of taskInfo
 
