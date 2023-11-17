@@ -619,7 +619,7 @@ public class ActivityManagerService extends IActivityManager.Stub
     private static final int MAX_BUGREPORT_TITLE_SIZE = 100;
     private static final int MAX_BUGREPORT_DESCRIPTION_SIZE = 150;
 
-    OomAdjuster mOomAdjuster;
+    public OomAdjuster mOomAdjuster;
 
     static final String EXTRA_TITLE = "android.intent.extra.TITLE";
     static final String EXTRA_DESCRIPTION = "android.intent.extra.DESCRIPTION";
@@ -2621,6 +2621,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         mTraceErrorLogger = new TraceErrorLogger();
         mComponentAliasResolver = new ComponentAliasResolver(this);
         mSwipeToScreenshotObserver = new SwipeToScreenshotObserver(mHandler, mContext);
+        mActivityTaskManager.mTaskSupervisor.setActivityManagerService(this);
     }
 
     public void setSystemServiceManager(SystemServiceManager mgr) {
@@ -20292,6 +20293,7 @@ public class ActivityManagerService extends IActivityManager.Stub
     public boolean shouldSkipBootCompletedBroadcastForPackage(ApplicationInfo info) {
         return getAppOpsManager().checkOpNoThrow(
                 AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
-                info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED;
+                info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED 
+                || !mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(info.packageName);
     }
 }
