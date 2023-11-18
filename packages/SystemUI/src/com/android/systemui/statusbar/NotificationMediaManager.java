@@ -20,10 +20,6 @@ import static com.android.systemui.statusbar.phone.CentralSurfaces.DEBUG_MEDIA_F
 import static com.android.systemui.statusbar.phone.CentralSurfaces.ENABLE_LOCKSCREEN_WALLPAPER;
 import static com.android.systemui.statusbar.phone.CentralSurfaces.SHOW_LOCKSCREEN_MEDIA_ARTWORK;
 
-import static android.provider.Settings.System.LOCKSCREEN_ALBUMART_FILTER;
-import static android.provider.Settings.System.LS_MEDIA_FILTER_BLUR_RADIUS;
-import static android.provider.Settings.System.LS_MEDIA_ARTWORK_FADE_PERCENT;
-
 // Album art feature start
 import android.content.ContentResolver;
 import android.content.res.Resources;
@@ -47,7 +43,6 @@ import android.annotation.Nullable;
 import android.app.Notification;
 import android.app.WallpaperManager;
 import android.content.Context;
-import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
@@ -99,6 +94,8 @@ import com.android.systemui.statusbar.phone.LockscreenWallpaper;
 import com.android.systemui.statusbar.phone.ScrimController;
 import com.android.systemui.statusbar.phone.ScrimState;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
+import com.android.systemui.tuner.TunerService;
+import com.android.systemui.util.NotificationUtils;
 import com.android.systemui.util.Utils;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 
@@ -128,13 +125,17 @@ public class NotificationMediaManager implements Dumpable {
     public static final boolean DEBUG_MEDIA = false;
 
     private static final String LOCKSCREEN_MEDIA_METADATA =
-            "lineagesecure:" + LineageSettings.Secure.LOCKSCREEN_MEDIA_METADATA;
-    public static final Uri LOCKSCREEN_ALBUMART_FILTER_URI =
-            Settings.System.getUriFor(LOCKSCREEN_ALBUMART_FILTER);
-    public static final Uri LS_MEDIA_FILTER_BLUR_RADIUS_URI =
-            Settings.System.getUriFor(LS_MEDIA_FILTER_BLUR_RADIUS);
-    public static final Uri LS_MEDIA_ARTWORK_FADE_PERCENT_URI =
-            Settings.System.getUriFor(LS_MEDIA_ARTWORK_FADE_PERCENT);
+            "lineagesecure:lockscreen_media_metadata";
+    private static final String LOCKSCREEN_ALBUMART_FILTER =
+            "system:lockscreen_albumart_filter";
+    private static final String LS_MEDIA_FILTER_BLUR_RADIUS =
+            "system:ls_media_filter_blur_radius";
+    private static final String LS_MEDIA_ARTWORK_FADE_PERCENT =
+            "system:ls_media_artwork_fade_percent";
+    private static final String ISLAND_NOTIFICATION =
+            "system:island_notification";
+    private static final String ISLAND_NOTIFICATION_NOW_PLAYING =
+            "system:island_notification_now_playing";
 
     private static final String NOWPLAYING_SERVICE = "com.google.android.as";
     private final StatusBarStateController mStatusBarStateController;
@@ -196,13 +197,14 @@ public class NotificationMediaManager implements Dumpable {
     private Display mCurrentDisplay;
 
     private LockscreenWallpaper.WallpaperDrawable mWallapperDrawable;
-    
-    private SettingsObserver mSettingsObserver;
 
     private boolean mShowMediaMetadata;
+    private boolean mIslandEnabled;
+    private boolean mIslandNowPlayingEnabled;
     private int mAlbumArtFilter;
     private int mFadeLevel;
     private float mLSBlurRadius;
+    private NotificationUtils notifUtils;
 
     private final MediaController.Callback mMediaListener = new MediaController.Callback() {
         @Override
@@ -212,6 +214,13 @@ public class NotificationMediaManager implements Dumpable {
                 Log.v(TAG, "DEBUG_MEDIA: onPlaybackStateChanged: " + state);
             }
             if (state != null) {
+                if (mIslandEnabled && mIslandNowPlayingEnabled) {
+                    if (PlaybackState.STATE_PLAYING == getMediaControllerPlaybackState(mMediaController) && mMediaMetadata != null) {
+                        notifUtils.showNowPlayingNotification(mMediaMetadata);
+                    } else {
+                        notifUtils.cancelNowPlayingNotification();
+                    }
+                }
                 if (!isPlaybackActive(state.getState())) {
                     clearCurrentMediaNotification();
                 }
@@ -227,6 +236,10 @@ public class NotificationMediaManager implements Dumpable {
             }
             mMediaArtworkProcessor.clearCache();
             mMediaMetadata = metadata;
+            if (mIslandEnabled && mIslandNowPlayingEnabled) {
+                notifUtils.cancelNowPlayingNotification();
+                notifUtils.showNowPlayingNotification(metadata);
+            }
             dispatchUpdateMediaMetaData(true /* changed */, true /* allowAnimation */);
         }
     };
@@ -273,43 +286,52 @@ public class NotificationMediaManager implements Dumpable {
 
         dumpManager.registerDumpable(this);
 
-        mSettingsObserver = new SettingsObserver(new Handler());
-        mSettingsObserver.observe();
+        notifUtils = new NotificationUtils(mContext);
+        TunerService tunerService = Dependency.get(TunerService.class);
+        tunerService.addTunable(mTunable, 
+            LOCKSCREEN_MEDIA_METADATA,
+            LOCKSCREEN_ALBUMART_FILTER,
+            LS_MEDIA_FILTER_BLUR_RADIUS,
+            LS_MEDIA_ARTWORK_FADE_PERCENT,
+            ISLAND_NOTIFICATION,
+            ISLAND_NOTIFICATION_NOW_PLAYING);
     }
 
-    class SettingsObserver extends ContentObserver {
-        SettingsObserver(Handler handler) {
-            super(handler);
-        }
-        void observe() {
-            mContext.getContentResolver().registerContentObserver(LOCKSCREEN_MEDIA_METADATA_URI, false, this,
-                    UserHandle.USER_ALL);
-            mContext.getContentResolver().registerContentObserver(LOCKSCREEN_ALBUMART_FILTER_URI, false, this,
-                    UserHandle.USER_ALL);
-            mContext.getContentResolver().registerContentObserver(LS_MEDIA_FILTER_BLUR_RADIUS_URI, false, this,
-                    UserHandle.USER_ALL);
-            mContext.getContentResolver().registerContentObserver(LS_MEDIA_ARTWORK_FADE_PERCENT_URI, false, this,
-                    UserHandle.USER_ALL);
-            updateMediaArtSettings();
-        }
-        void updateMediaArtSettings() {
-             mShowMediaMetadata = getSettingsValue(Settings.System.LOCKSCREEN_MEDIA_METADATA) != 0;
-             mAlbumArtFilter = getSettingsValue(Settings.System.LOCKSCREEN_ALBUMART_FILTER);
-             mLSBlurRadius = (float) getSettingsValue(Settings.System.LS_MEDIA_FILTER_BLUR_RADIUS);
-             mFadeLevel = getSettingsValue(Settings.System.LS_MEDIA_ARTWORK_FADE_PERCENT);
-             dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
-        }
-        int getSettingsValue(String key) {
-            return Settings.System.getIntForUser(
-                    mContext.getContentResolver(),
-                    key,
-                    0, UserHandle.USER_CURRENT);
-        }
+    private final TunerService.Tunable mTunable = new TunerService.Tunable() {
         @Override
-        public void onChange(boolean selfChange) {
-            updateMediaArtSettings();
+        public void onTuningChanged(String key, String newValue) {
+            switch (key) {
+                case LOCKSCREEN_MEDIA_METADATA:
+                    mShowMediaMetadata =
+                            TunerService.parseIntegerSwitch(newValue, true);
+                    dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
+                    break;
+                case LOCKSCREEN_ALBUMART_FILTER:
+                    mAlbumArtFilter =
+                            TunerService.parseInteger(newValue, 0);
+                    dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
+                    break;
+                case LS_MEDIA_FILTER_BLUR_RADIUS:
+                    mLSBlurRadius =
+                            (float) TunerService.parseInteger(newValue, 125);
+                    dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
+                    break;
+                case LS_MEDIA_ARTWORK_FADE_PERCENT:
+                    mFadeLevel =
+                            TunerService.parseInteger(newValue, 30);
+                    dispatchUpdateMediaMetaData(false /* changed */, true /* allowAnimation */);
+                    break;
+                case ISLAND_NOTIFICATION:
+                    mIslandEnabled = TunerService.parseIntegerSwitch(newValue, true);
+                    break;
+                case ISLAND_NOTIFICATION_NOW_PLAYING:
+                    mIslandNowPlayingEnabled = TunerService.parseIntegerSwitch(newValue, true);
+                    break;
+                default:
+                    break;
+            }
         }
-    }
+    };
 
     private void setupNotifPipeline() {
         mNotifPipeline.addCollectionListener(new NotifCollectionListener() {
