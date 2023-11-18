@@ -18,8 +18,6 @@ package com.android.systemui.lineage
 
 import com.android.systemui.qs.tileimpl.QSTileImpl
 import com.android.systemui.qs.tiles.AmbientDisplayTile
-import com.android.systemui.qs.tiles.AODTile
-import com.android.systemui.qs.tiles.CaffeineTile
 import com.android.systemui.qs.tiles.CellularTile
 import com.android.systemui.qs.tiles.HeadsUpTile
 import com.android.systemui.qs.tiles.PowerShareTile
@@ -42,18 +40,6 @@ interface LineageModule {
     @IntoMap
     @StringKey(AmbientDisplayTile.TILE_SPEC)
     fun bindAmbientDisplayTile(ambientDisplayTile: AmbientDisplayTile): QSTileImpl<*>
-
-    /** Inject AODTile into tileMap in QSModule */
-    @Binds
-    @IntoMap
-    @StringKey(AODTile.TILE_SPEC)
-    fun bindAODTile(aodTile: AODTile): QSTileImpl<*>
-
-    /** Inject CaffeineTile into tileMap in QSModule */
-    @Binds
-    @IntoMap
-    @StringKey(CaffeineTile.TILE_SPEC)
-    fun bindCaffeineTile(caffeineTile: CaffeineTile): QSTileImpl<*>
 
     /** Inject CellularTile into tileMap in QSModule */
     @Binds

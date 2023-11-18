@@ -71,6 +71,7 @@ import com.android.systemui.plugins.BcSmartspaceDataPlugin;
 import com.android.systemui.privacy.PrivacyModule;
 import com.android.systemui.process.condition.SystemProcessCondition;
 import com.android.systemui.qrcodescanner.dagger.QRCodeScannerModule;
+import com.android.systemui.qs.tiles.QsTileModule;
 import com.android.systemui.qs.FgsManagerController;
 import com.android.systemui.qs.FgsManagerControllerImpl;
 import com.android.systemui.qs.QSFragmentStartableModule;
@@ -195,6 +196,7 @@ import javax.inject.Named;
             PrivacyModule.class,
             QRCodeScannerModule.class,
             QSFragmentStartableModule.class,
+            QsTileModule.class,
             RetailModeModule.class,
             SceneContainerFrameworkModule.class,
             ScreenshotModule.class,
