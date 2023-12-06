@@ -2752,8 +2752,11 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                             task.effectiveUid, pkg) != AppOpsManager.MODE_ALLOWED 
                             || (mActivityManagerService != null 
                             && !mActivityManagerService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(pkg))) {
-                            mService.mAmInternal.killProcess(pkg, task.mUserId,
-                                    "Strict standby policy");
+                            try {
+                                ActivityManager.getService().forceStopPackage(pkg, task.mUserId);
+                            } catch (RemoteException e) {
+                                Slog.e(TAG, "Strict standby force stop failed...");
+                            }
                             mService.mAppStandbyInternal.restrictApp(
                                     pkg, task.mUserId, REASON_MAIN_FORCED_BY_USER, 0);
                     }
