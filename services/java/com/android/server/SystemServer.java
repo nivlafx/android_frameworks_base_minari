@@ -230,6 +230,7 @@ import com.android.server.wm.WindowManagerService;
 import dalvik.system.VMRuntime;
 
 import org.rising.server.QuickSwitchService;
+import org.rising.server.AudioEffectService;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -449,6 +450,9 @@ public final class SystemServer implements Dumpable {
 
     private static final String POCKETLOCK_SERVICE_CLASS =
             "org.rising.server.PocketModeService";
+            
+    private static final String AUDIO_EFFECT_SERVICE_CLASS =
+            "org.rising.server.AudioEffectService";
 
     private static final String TETHERING_CONNECTOR_CLASS = "android.net.ITetheringConnector";
 
@@ -2900,6 +2904,10 @@ public final class SystemServer implements Dumpable {
 
         t.traceBegin("AppCompatOverridesService");
         mSystemServiceManager.startService(APP_COMPAT_OVERRIDES_SERVICE_CLASS);
+        t.traceEnd();
+
+        t.traceBegin("StartAudioEffectService");
+        mSystemServiceManager.startService(AUDIO_EFFECT_SERVICE_CLASS);
         t.traceEnd();
 
         t.traceBegin("StartQuickSwitchService");
