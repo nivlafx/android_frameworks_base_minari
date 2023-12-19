@@ -114,6 +114,11 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
 
     private final Listener mListener;
 
+    private static final String GESTURE_NAVBAR_LENGTH_MODE =
+            "system:" + "gesture_navbar_length_mode";
+    private static final String GESTURE_NAVBAR_RADIUS =
+            "system:" + "gesture_navbar_radius";
+
     protected LayoutInflater mLayoutInflater;
     protected LayoutInflater mLandscapeInflater;
 
@@ -132,6 +137,7 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
 
     private OverviewProxyService mOverviewProxyService;
     private int mNavBarMode = NAV_BAR_MODE_3BUTTON;
+    private int mNavBarWidth = 0;
 
     private boolean mInverseLayout;
     private boolean mIsHintEnabled;
@@ -151,6 +157,23 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
         landscape.setTo(mContext.getResources().getConfiguration());
         landscape.orientation = Configuration.ORIENTATION_LANDSCAPE;
         mLandscapeInflater = LayoutInflater.from(mContext.createConfigurationContext(landscape));
+    }
+
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        if (GESTURE_NAVBAR_LENGTH_MODE.equals(key)) {
+            mNavBarWidth = TunerService.parseInteger(newValue, 3);
+            onLikelyDefaultLayoutChange();
+        } else if (GESTURE_NAVBAR_RADIUS.equals(key)) {
+            onLikelyDefaultLayoutChange();
+        } else if (NAV_BAR_INVERSE.equals(key)) {
+            mInverseLayout = TunerService.parseIntegerSwitch(newValue, false);
+            updateLayoutInversion();
+        } else if (KEY_NAVIGATION_HINT.equals(key)) {
+            mIsHintEnabled = TunerService.parseIntegerSwitch(newValue, true);
+            updateHint();
+            onLikelyDefaultLayoutChange();
+        }
     }
 
     @Override
@@ -194,6 +217,7 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
         super.onAttachedToWindow();
         Dependency.get(TunerService.class).addTunable(this, NAV_BAR_INVERSE);
         Dependency.get(TunerService.class).addTunable(this, KEY_NAVIGATION_HINT);
+        Dependency.get(TunerService.class).addTunable(this, GESTURE_NAVBAR_LENGTH_MODE, GESTURE_NAVBAR_RADIUS);
     }
 
     @Override
@@ -201,18 +225,6 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
         Dependency.get(NavigationModeController.class).removeListener(mListener);
         Dependency.get(TunerService.class).removeTunable(this);
         super.onDetachedFromWindow();
-    }
-
-    @Override
-    public void onTuningChanged(String key, String newValue) {
-        if (NAV_BAR_INVERSE.equals(key)) {
-            mInverseLayout = TunerService.parseIntegerSwitch(newValue, false);
-            updateLayoutInversion();
-        } else if (KEY_NAVIGATION_HINT.equals(key)) {
-            mIsHintEnabled = TunerService.parseIntegerSwitch(newValue, true);
-            updateHint();
-            onLikelyDefaultLayoutChange();
-        }
     }
 
     @Override
@@ -480,6 +492,25 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
             v = inflater.inflate(R.layout.contextual, parent, false);
         } else if (HOME_HANDLE.equals(button)) {
             v = inflater.inflate(R.layout.home_handle, parent, false);
+            ViewGroup.LayoutParams lp = v.getLayoutParams();
+            float navWidth = getResources().getDimensionPixelSize(R.dimen.navigation_home_handle_width);
+            if (mNavBarWidth >= 0 && mNavBarWidth <= 3) {
+                switch (mNavBarWidth) {
+                    case 0:
+                        lp.width = 0;
+                        break;
+                    case 1:
+                        lp.width = (int) Math.ceil(navWidth * 0.66f);
+                        break;
+                    case 2:
+                        lp.width = (int) Math.ceil(navWidth);
+                        break;
+                    case 3:
+                        lp.width = (int) Math.ceil(navWidth * 1.33f);
+                        break;
+                }
+            }
+            v.setLayoutParams(lp);
         } else if (IME_SWITCHER.equals(button)) {
             v = inflater.inflate(R.layout.ime_switcher, parent, false);
         } else if (button.startsWith(KEY)) {
