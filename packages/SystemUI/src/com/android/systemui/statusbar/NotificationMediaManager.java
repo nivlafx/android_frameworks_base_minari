@@ -99,8 +99,6 @@ import com.android.systemui.util.NotificationUtils;
 import com.android.systemui.util.Utils;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 
-import lineageos.providers.LineageSettings;
-
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -125,7 +123,7 @@ public class NotificationMediaManager implements Dumpable {
     public static final boolean DEBUG_MEDIA = false;
 
     private static final String LOCKSCREEN_MEDIA_METADATA =
-            "lineagesecure:lockscreen_media_metadata";
+            "system:lockscreen_media_metadata";
     private static final String LOCKSCREEN_ALBUMART_FILTER =
             "system:lockscreen_albumart_filter";
     private static final String LS_MEDIA_FILTER_BLUR_RADIUS =
