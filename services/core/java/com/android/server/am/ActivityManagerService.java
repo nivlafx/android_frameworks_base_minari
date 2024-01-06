@@ -20282,7 +20282,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         return getAppOpsManager().checkOpNoThrow(
                 AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
                 info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED 
-                || !mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(info.packageName);
+                && !mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(info.packageName);
     }
 
     public boolean shouldForceCutoutFullscreen(String packageName) {

@@ -199,7 +199,7 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
      * The timeout to kill task processes if its activity didn't complete destruction in time
      * when there is a request to remove the task with killProcess=true.
      */
-    private static final int KILL_TASK_PROCESSES_TIMEOUT_MS = 100;
+    private static final int KILL_TASK_PROCESSES_TIMEOUT_MS = 0;
 
     private static final int IDLE_TIMEOUT_MSG = FIRST_SUPERVISOR_TASK_MSG;
     private static final int IDLE_NOW_MSG = FIRST_SUPERVISOR_TASK_MSG + 1;
@@ -2749,10 +2749,11 @@ public class ActivityTaskSupervisor implements RecentTasks.Callbacks {
                     if (pkg == null) return;
                     if (getAppOpsManager().checkOpNoThrow(
                             AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
-                            task.effectiveUid, pkg) != AppOpsManager.MODE_ALLOWED 
-                            || (mActivityManagerService != null 
-                            && !mActivityManagerService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(pkg))) {
+                            task.effectiveUid, pkg) != AppOpsManager.MODE_ALLOWED) {
                             try {
+                                if (mActivityManagerService != null) {
+                                    mActivityManagerService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.addPkgToFreezeList(pkg);
+                                }
                                 ActivityManager.getService().forceStopPackage(pkg, task.mUserId);
                             } catch (RemoteException e) {
                                 Slog.e(TAG, "Strict standby force stop failed...");

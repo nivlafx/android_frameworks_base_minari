@@ -394,9 +394,11 @@ public class BroadcastQueueImpl extends BroadcastQueue {
                 && r.options.getTemporaryAppAllowlistDuration() > 0
                 && r.options.getTemporaryAppAllowlistType()
                     == TEMPORARY_ALLOW_LIST_TYPE_APP_FREEZING_DELAYED) {
-            mService.mOomAdjuster.mCachedAppOptimizer.unfreezeTemporarily(app,
-                    CachedAppOptimizer.UNFREEZE_REASON_START_RECEIVER,
-                    r.options.getTemporaryAppAllowlistDuration());
+            if (mService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app)) {
+                mService.mOomAdjuster.mCachedAppOptimizer.unfreezeTemporarily(app,
+                        CachedAppOptimizer.UNFREEZE_REASON_START_RECEIVER,
+                        r.options.getTemporaryAppAllowlistDuration());
+            }
         }
 
         boolean started = false;
@@ -840,6 +842,14 @@ public class BroadcastQueueImpl extends BroadcastQueue {
             }
         }
 
+        if (!skip) {
+            synchronized (mService.mProcLock) {
+                if (!mService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(filter.receiverList.app)) {
+                    skip = true;
+                }
+            }
+        }
+
         if (skip) {
             r.delivery[index] = BroadcastRecord.DELIVERY_SKIPPED;
             return;
@@ -868,8 +878,10 @@ public class BroadcastQueueImpl extends BroadcastQueue {
                         OOM_ADJ_REASON_START_RECEIVER);
             }
         } else if (filter.receiverList.app != null) {
-            mService.mOomAdjuster.unfreezeTemporarily(filter.receiverList.app,
-                    CachedAppOptimizer.UNFREEZE_REASON_START_RECEIVER);
+            if (mService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(filter.receiverList.app)) {
+                mService.mOomAdjuster.unfreezeTemporarily(filter.receiverList.app,
+                        CachedAppOptimizer.UNFREEZE_REASON_START_RECEIVER);
+            }
         }
 
         try {
@@ -1176,6 +1188,9 @@ public class BroadcastQueueImpl extends BroadcastQueue {
                     }
                     if (sendResult) {
                         if (r.callerApp != null) {
+                            if (!mService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(r.callerApp)) {
+                                return;
+                            }
                             mService.mOomAdjuster.unfreezeTemporarily(
                                     r.callerApp,
                                     CachedAppOptimizer.UNFREEZE_REASON_FINISH_RECEIVER);
@@ -1413,7 +1428,13 @@ public class BroadcastQueueImpl extends BroadcastQueue {
         }
 
         if (!skip) {
-            if (app == null) {
+            if (app != null) {
+                synchronized (mService.mProcLock) {
+                    if (!mService.mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app)) {
+                        skip = true;
+                    }
+                }
+            } else {
                 if (mService.shouldSkipBootCompletedBroadcastForPackage(info.activityInfo.applicationInfo)) {
                     skip = true;
                 }
