@@ -24,7 +24,7 @@
 
     <dimen name="qs_brightness_margin_top">0dp</dimen>
     <dimen name="qs_brightness_margin_bottom">12dp</dimen>
-    <dimen name="qqs_layout_margin_top">8dp</dimen>
+    <dimen name="qqs_layout_margin_top">14dp</dimen>
 
     <!--  In landscape the security footer is actually part of the header,
     and needs to be as short as the header  -->
@@ -86,4 +86,7 @@
          overlaid -->
     <dimen name="global_actions_button_size">72dp</dimen>
     <dimen name="global_actions_button_padding">26dp</dimen>
+    
+    <dimen name="large_screen_shade_header_height">60.0dip</dimen>
+    <dimen name="notification_panel_margin_top">16.0dip</dimen>
 </resources>

@@ -1,0 +1,123 @@
+<!--
+  ~ Copyright (C) 2023 the RisingOS Android Project
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:gravity="center"
+    android:layout_gravity="center"
+    android:orientation="vertical"
+    android:id="@+id/qs_footer_shortcut_widgets"
+    android:layout_width="0dp"
+    android:layout_height="170dp"
+    android:layout_weight="1.0"
+    android:layout_marginStart="8dp"
+    android:backgroundTint="?attr/offStateColor">
+        <LinearLayout
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <LinearLayout
+                android:gravity="center"
+                android:orientation="vertical"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1.0"
+                android:layout_marginEnd="@dimen/qs_widget_shortcut_icon_side_padding">
+                    <com.android.systemui.statusbar.AlphaOptimizedImageView
+                        android:gravity="center"
+                        android:id="@+id/qs_flashlight"
+                        android:background="@drawable/qs_footer_action_circle"
+                        android:padding="@dimen/qs_widget_shortcut_icon_padding"
+                        android:focusable="true"
+                        android:clickable="true"
+                        android:layout_width="@dimen/qs_footer_circle_size"
+                        android:layout_height="@dimen/qs_footer_circle_size"
+                        android:layout_marginTop="@dimen/qs_widgets_icon_top_margin"
+                        android:layout_marginBottom="@dimen/qs_widgets_icon_bottom_margin"
+                        android:src="@drawable/ic_flashlight_off"
+                        android:tint="?android:attr/textColorPrimary" />
+                    <com.android.systemui.statusbar.AlphaOptimizedImageView
+                        android:gravity="center"
+                        android:id="@+id/qs_clock_timer"
+                        android:background="@drawable/qs_footer_action_circle"
+                        android:padding="@dimen/qs_widget_shortcut_icon_padding"
+                        android:focusable="true"
+                        android:clickable="true"
+                        android:layout_width="@dimen/qs_footer_circle_size"
+                        android:layout_height="@dimen/qs_footer_circle_size"
+                        android:layout_marginTop="@dimen/qs_widgets_icon_top_margin"
+                        android:layout_marginBottom="@dimen/qs_widgets_icon_bottom_margin"
+                        android:src="@drawable/ic_alarm"
+                        android:tint="?android:attr/textColorPrimary"
+                        android:contentDescription="@string/accessibility_quick_settings_edit" />
+                </LinearLayout>
+                <LinearLayout
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.0"
+                    android:layout_marginStart="@dimen/qs_widget_shortcut_icon_side_padding">
+                    <com.android.systemui.statusbar.AlphaOptimizedImageView
+                        android:gravity="center"
+                        android:id="@+id/qs_calculator"
+                        android:background="@drawable/qs_footer_action_circle"
+                        android:padding="@dimen/qs_widget_shortcut_icon_padding"
+                        android:focusable="true"
+                        android:clickable="true"
+                        android:layout_width="@dimen/qs_footer_circle_size"
+                        android:layout_height="@dimen/qs_footer_circle_size"
+                        android:layout_marginTop="@dimen/qs_widgets_icon_top_margin"
+                        android:layout_marginBottom="@dimen/qs_widgets_icon_bottom_margin"
+                        android:src="@drawable/ic_calculator"
+                        android:tint="?android:attr/textColorPrimary" />
+                    <com.android.systemui.statusbar.AlphaOptimizedImageView
+                        android:gravity="center"
+                        android:id="@+id/qs_camera"
+                        android:background="@drawable/qs_footer_action_circle"
+                        android:padding="@dimen/qs_widget_shortcut_icon_padding"
+                        android:focusable="true"
+                        android:clickable="true"
+                        android:layout_width="@dimen/qs_footer_circle_size"
+                        android:layout_height="@dimen/qs_footer_circle_size"
+                        android:layout_marginTop="@dimen/qs_widgets_icon_top_margin"
+                        android:layout_marginBottom="@dimen/qs_widgets_icon_bottom_margin"
+                        android:src="@drawable/ic_camera"
+                        android:tint="?android:attr/textColorPrimaryInverse"
+                        android:backgroundTint="?android:attr/colorAccent" />
+                </LinearLayout>
+            </LinearLayout>
+        <LinearLayout
+            android:gravity="center_horizontal"
+            android:orientation="horizontal"
+            android:layout_gravity="center_horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content">
+            <com.android.systemui.statusbar.AlphaOptimizedImageView
+                android:gravity="center"
+                android:id="@+id/widgets_indicator_page1"
+                android:layout_width="@dimen/qs_widgets_page_indicator_size"
+                android:layout_height="@dimen/qs_widgets_page_indicator_size"
+                android:layout_marginEnd="4dp"
+                android:src="@drawable/viewpager_dot_unselected" />
+            <com.android.systemui.statusbar.AlphaOptimizedImageView
+                android:gravity="center"
+                android:id="@+id/widgets_indicator_page2"
+                android:layout_width="@dimen/qs_widgets_page_indicator_size"
+                android:layout_height="@dimen/qs_widgets_page_indicator_size"
+                android:src="@drawable/viewpager_dot_selected" />
+        </LinearLayout>
+</LinearLayout>

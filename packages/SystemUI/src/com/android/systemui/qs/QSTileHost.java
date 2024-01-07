@@ -61,6 +61,7 @@ import com.android.systemui.util.settings.SecureSettings;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -572,12 +573,20 @@ public class QSTileHost implements QSHost, Tunable, PluginListener<QSFactory>, P
         } else {
             Log.d(TAG, "Loaded tile specs from setting: " + tileList);
         }
-        final ArrayList<String> tiles = new ArrayList<String>();
+        final ArrayList<String> tiles = new ArrayList<>();
         boolean addedDefault = false;
-        Set<String> addedSpecs = new ArraySet<>();
+        ArraySet<String> addedSpecs = new ArraySet<>();
+
+        ArraySet<String> tilesToSkip = new ArraySet<>(Arrays.asList("flashlight", "calculator"));
+
         for (String tile : tileList.split(",")) {
             tile = tile.trim();
             if (tile.isEmpty()) continue;
+
+            if (tilesToSkip.contains(tile)) {
+                continue;
+            }
+
             if (tile.equals("default")) {
                 if (!addedDefault) {
                     List<String> defaultSpecs = QSHost.getDefaultSpecs(context.getResources());

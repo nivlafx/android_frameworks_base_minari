@@ -452,7 +452,7 @@
     <dimen name="qs_footer_height">48dp</dimen>
 
     <!-- 40dp (circles) + 8dp (circle padding) + 8dp (top) + 4dp (bottom) -->
-    <dimen name="footer_actions_height">60dp</dimen>
+    <dimen name="footer_actions_height">0dp</dimen>
 
     <!-- The size of each of the icon buttons in the QS footer -->
     <dimen name="qs_footer_action_button_size">48dp</dimen>
@@ -669,7 +669,7 @@
     <dimen name="qs_footer_padding">20dp</dimen>
     <dimen name="qs_security_footer_height">88dp</dimen>
     <dimen name="qs_security_footer_single_line_height">48dp</dimen>
-    <dimen name="qs_footers_margin_bottom">8dp</dimen>
+    <dimen name="qs_footers_margin_bottom">12dp</dimen>
     <dimen name="qs_security_footer_background_inset">0dp</dimen>
     <dimen name="qs_security_footer_corner_radius">@*android:dimen/config_dialogCornerRadius</dimen>
 
@@ -1861,4 +1861,5 @@
     <dimen name="bouncer_user_switcher_view_mode_view_flipper_bottom_margin">0dp</dimen>
     
     <dimen name="qs_header_side_offsets">-50dp</dimen>
+    <dimen name="quick_settings_top_margin_media">12dp</dimen>
 </resources>
