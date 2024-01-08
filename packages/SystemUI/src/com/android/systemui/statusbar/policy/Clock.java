@@ -29,6 +29,8 @@ import android.icu.lang.UCharacter;
 import android.icu.text.DateTimePatternGenerator;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.HandlerExecutor;
+import android.os.HandlerThread;
 import android.os.Parcelable;
 import android.os.SystemClock;
 import android.os.UserHandle;
@@ -110,6 +112,7 @@ public class Clock extends TextView implements
     private final int mAmPmStyle;
     private boolean mShowSeconds;
     private Handler mSecondsHandler;
+    private HandlerThread mHandlerThread;
 
     // Fields to cache the width so the clock remains at an approximately constant width
     private int mCharsAtCurrentWidth = -1;
@@ -150,6 +153,8 @@ public class Clock extends TextView implements
         }
         mBroadcastDispatcher = Dependency.get(BroadcastDispatcher.class);
         mUserTracker = Dependency.get(UserTracker.class);
+        mHandlerThread = new HandlerThread("Clock");
+        mHandlerThread.start();
 
         setIncludeFontPadding(false);
     }
@@ -210,7 +215,7 @@ public class Clock extends TextView implements
                     StatusBarIconController.ICON_HIDE_LIST,
                     STATUSBAR_CLOCK_CHIP);
             mCommandQueue.addCallback(this);
-            mUserTracker.addCallback(mUserChangedCallback, mContext.getMainExecutor());
+            mUserTracker.addCallback(mUserChangedCallback, new HandlerExecutor(mHandlerThread.getThreadHandler()));
             mCurrentUserId = mUserTracker.getUserId();
         }
 
