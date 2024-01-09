@@ -105,8 +105,8 @@ import com.android.systemui.statusbar.policy.CastController;
 import com.android.systemui.statusbar.policy.KeyguardStateController;
 import com.android.systemui.util.LargeScreenUtils;
 import com.android.systemui.util.kotlin.JavaAdapter;
-
-import lineageos.providers.LineageSettings;
+import com.android.systemui.Dependency;
+import com.android.systemui.tuner.TunerService;
 
 import dagger.Lazy;
 
@@ -118,10 +118,13 @@ import javax.inject.Inject;
  * TODO (b/264460656) make this dumpable
  */
 @SysUISingleton
-public class QuickSettingsController implements Dumpable {
+public class QuickSettingsController implements Dumpable, TunerService.Tunable {
     public static final String TAG = "QuickSettingsController";
 
     public static final int SHADE_BACK_ANIM_SCALE_MULTIPLIER = 100;
+    
+    private static final String STATUS_BAR_QUICK_QS_PULLDOWN =
+            "system:" + "quick_qs_pulldown";
 
     private QS mQs;
     private final Lazy<NotificationPanelViewController> mPanelViewControllerLazy;
@@ -294,7 +297,6 @@ public class QuickSettingsController implements Dumpable {
     private int mLastNotificationsClippingTopBoundNssl;
 
     private int mOneFingerQuickSettingsIntercept;
-    private ContentObserver mOneFingerQuickSettingsInterceptObserver;
 
     private final Region mInterceptRegion = new Region();
     /** The end bounds of a clipping animation. */
@@ -404,19 +406,19 @@ public class QuickSettingsController implements Dumpable {
 
         mLockscreenShadeTransitionController.addCallback(new LockscreenShadeTransitionCallback());
 
-        mOneFingerQuickSettingsIntercept = LineageSettings.System.getInt(
-                mPanelView.getContext().getContentResolver(),
-                LineageSettings.System.STATUS_BAR_QUICK_QS_PULLDOWN, 0);
-        mOneFingerQuickSettingsInterceptObserver = new ContentObserver(null) {
-            @Override
-            public void onChange(boolean selfChange) {
-                mOneFingerQuickSettingsIntercept = LineageSettings.System.getInt(
-                        mPanelView.getContext().getContentResolver(),
-                        LineageSettings.System.STATUS_BAR_QUICK_QS_PULLDOWN, 0);
-            }
-        };
-
         dumpManager.registerDumpable(this);
+        Dependency.get(TunerService.class).addTunable(this, STATUS_BAR_QUICK_QS_PULLDOWN);
+    }
+
+    @Override
+    public void onTuningChanged(String key, String newValue) {
+        switch (key) {
+            case STATUS_BAR_QUICK_QS_PULLDOWN:
+                mOneFingerQuickSettingsIntercept = TunerService.parseInteger(newValue, 0);
+                break;
+            default:
+                break;
+        }
     }
 
     @VisibleForTesting
@@ -2216,18 +2218,12 @@ public class QuickSettingsController implements Dumpable {
             mShadeTransitionController.setQs(mQs);
             mNotificationStackScrollLayoutController.setQsHeader((ViewGroup) mQs.getHeader());
             mQs.setScrollListener(mQsScrollListener);
-            mPanelView.getContext().getContentResolver().registerContentObserver(
-                    LineageSettings.System.getUriFor(
-                            LineageSettings.System.STATUS_BAR_QUICK_QS_PULLDOWN),
-                    false, mOneFingerQuickSettingsInterceptObserver);
             updateExpansion();
         }
 
         /** */
         @Override
         public void onFragmentViewDestroyed(String tag, Fragment fragment) {
-            mPanelView.getContext().getContentResolver().unregisterContentObserver(
-                    mOneFingerQuickSettingsInterceptObserver);
             // Manual handling of fragment lifecycle is only required because this bridges
             // non-fragment and fragment code. Once we are using a fragment for the notification
             // panel, mQs will not need to be null cause it will be tied to the same lifecycle.
