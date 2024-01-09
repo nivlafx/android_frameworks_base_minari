@@ -25,13 +25,16 @@ import android.app.Application;
 import android.app.TaskStackListener;
 import android.content.Context;
 import android.content.ComponentName;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
 import android.os.Binder;
 import android.os.Process;
 import android.os.Build.VERSION;
 import android.os.SystemProperties;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.WindowManager;
 
 import com.android.internal.R;
 
@@ -52,31 +55,41 @@ public class PropImitationHooks {
     
     private static final String PRODUCT_DEVICE = "ro.product.device";
 
-    private static final String sMainFP = "google/felix/felix:14/UP1A.231105.003/11010452:user/release-keys";
-    private static final String sMainModel = "Pixel Fold";
+    private static final String sMainFP = "google/husky/husky:14/UQ1A.240105.004.A1/11206926:user/release-keys";
+    private static final String sMainModel = "Pixel 8 Pro";
+    private static final String sMainFpTablet = "google/tangorpro/tangorpro:14/UQ1A.240105.002/11129216:user/release-keys";
+    private static final String sMainModelTablet = "Pixel Tablet";
     private static final String sStockFp = SystemProperties.get("ro.vendor.build.fingerprint");
 
     private static final String PACKAGE_ARCORE = "com.google.ar.core";
+    private static final String PACKAGE_ASI = "com.google.android.as";
+    private static final String PACKAGE_COMPUTE_SERVICES = "com.google.android.as.oss";
+    private static final String PACKAGE_EXT_SERVICES = "com.google.android.ext.services";
     private static final String PACKAGE_FINSKY = "com.android.vending";
     private static final String PACKAGE_GMS = "com.google.android.gms";
+    private static final String PROCESS_GMS_PERSISTENT = PACKAGE_GMS + ".persistent";
+    private static final String PROCESS_GMS_UI = PACKAGE_GMS + ".ui";
     private static final String PROCESS_GMS_UNSTABLE = PACKAGE_GMS + ".unstable";
-    private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
-    private static final String PACKAGE_GCAM = "com.google.android.GoogleCamera";
-    private static final String PACKAGE_SNAPCHAT = "com.snapchat.android";
 
+    private static final String PACKAGE_AIAI = "com.google.android.apps.miphone.aiai.AiaiApplication";
+    private static final String PACKAGE_GASSIST = "com.google.android.apps.googleassistant";
+    private static final String PACKAGE_GCAM = "com.google.android.GoogleCamera";
+    private static final String PACKAGE_GPHOTOS = "com.google.android.apps.photos";
     private static final String PACKAGE_SUBSCRIPTION_RED = "com.google.android.apps.subscriptions.red";
     private static final String PACKAGE_TURBO = "com.google.android.apps.turbo";
     private static final String PACKAGE_VELVET = "com.google.android.googlequicksearchbox";
     private static final String PACKAGE_GBOARD = "com.google.android.inputmethod.latin";
+    private static final String PACKAGE_SETIINGS_INTELLIGENCE = "com.google.android.settings.intelligence";
     private static final String PACKAGE_SETUPWIZARD = "com.google.android.setupwizard";
     private static final String PACKAGE_EMOJI_WALLPAPER = "com.google.android.apps.emojiwallpaper";
     private static final String PACKAGE_CINEMATIC_PHOTOS = "com.google.android.wallpaper.effects";
     private static final String PACKAGE_GOOGLE_WALLPAPERS = "com.google.android.wallpaper";
+    private static final String PACKAGE_SNAPCHAT = "com.snapchat.android";
 
     private static final ComponentName GMS_ADD_ACCOUNT_ACTIVITY = ComponentName.unflattenFromString(
             "com.google.android.gms/.auth.uiflows.minutemaid.MinuteMaidActivity");
 
-    private static final Map<String, Object> sMainSpoofProps = createGoogleSpoofProps(sMainModel, sMainFP);
+    private static Map<String, Object> sMainSpoofProps;
     private static final Map<String, Object> gPhotosProps = createGoogleSpoofProps("Pixel XL", "google/marlin/marlin:10/QP1A.191005.007.A3/5972272:user/release-keys");
     private static final Map<String, Object> asusROG1Props = createGameProps("ASUS_Z01QD", "Asus");
     private static final Map<String, Object> asusROG3Props = createGameProps("ASUS_I003D", "Asus");
@@ -174,7 +187,7 @@ public class PropImitationHooks {
         return "";
     }
 
-    private static volatile boolean sIsGms, sIsFinsky, sIsSetupWizard;
+    private static volatile boolean sIsGms, sIsFinsky, sIsSetupWizard, sIsAtraceCoreService, sIsAiServices;
     private static volatile String sProcessName;
 
     public static void setProps(Application app) {
@@ -183,21 +196,43 @@ public class PropImitationHooks {
         if (app == null || packageName == null || processName == null) {
             return;
         }
+        Context appContext = app.getApplicationContext();
+        if (appContext == null) {
+            return;
+        }
+        sMainSpoofProps = createGoogleSpoofProps(
+            isDeviceTablet(appContext) ? sMainModelTablet : sMainModel, 
+            isDeviceTablet(appContext) ? sMainFpTablet : sMainFP);
         sProcessName = processName;
         sIsGms = packageName.equals(PACKAGE_GMS) && processName.equals(PROCESS_GMS_UNSTABLE);
         sIsFinsky = packageName.equals(PACKAGE_FINSKY);
         sIsSetupWizard = packageName.equals(PACKAGE_SETUPWIZARD);
+        sIsAtraceCoreService = packageName.equals(PACKAGE_GMS) 
+            && (processName.equals(PROCESS_GMS_PERSISTENT) || processName.equals(PROCESS_GMS_UI));
+        sIsAiServices = packageName.toLowerCase().contains("aiai") && packageName.toLowerCase().contains("google")
+            || processName.toLowerCase().contains("aiai") && processName.toLowerCase().contains("google");
 
         if (sIsGms) {
             if (shouldTryToCertifyDevice()) {
                 dlog("Spoofing build for GMS");
+                setPropValue("TIME", System.currentTimeMillis());
                 spoofBuildGms();
+            } else {
+                Process.killProcess(Process.myPid());
             }
+        } else if (sIsAtraceCoreService || sIsAiServices){
+            dlog("Spoofing as " + sMainModel + " for: " + packageName);
+            sMainSpoofProps.forEach((k, v) -> setPropValue(k, v));
         } else {
             switch (packageName) {
+                case PACKAGE_AIAI:
+                case PACKAGE_ASI:
+                case PACKAGE_COMPUTE_SERVICES:
+                case PACKAGE_SETIINGS_INTELLIGENCE:
                 case PACKAGE_SUBSCRIPTION_RED:
                 case PACKAGE_TURBO:
                 case PACKAGE_VELVET:
+                case PACKAGE_GASSIST:
                 case PACKAGE_GBOARD:
                 case PACKAGE_SETUPWIZARD:
                 case PACKAGE_GMS:
@@ -205,13 +240,8 @@ public class PropImitationHooks {
                 case PACKAGE_CINEMATIC_PHOTOS:
                 case PACKAGE_GOOGLE_WALLPAPERS:
                 case PACKAGE_EMOJI_WALLPAPER:
-                    if (packageName.equals(PACKAGE_GCAM) && !SystemProperties.getBoolean("persist.sys.pixelprops.gcam", false)) {
-                        dlog("Not spoofing as " + sMainModel + " for: " + packageName);
-                        break;
-                    }
                     dlog("Spoofing as " + sMainModel + " for: " + packageName);
                     sMainSpoofProps.forEach((k, v) -> setPropValue(k, v));
-                    setPropValue("TIME", System.currentTimeMillis());
                     break;
                 case PACKAGE_ARCORE:
                     dlog("Setting stock fingerprint for: " + packageName);
@@ -222,13 +252,10 @@ public class PropImitationHooks {
                     spoofBuildGms();
                     break;
                 case PACKAGE_GPHOTOS:
-                    if (SystemProperties.getBoolean("persist.sys.pixelprops.gphotos", true)) {
-                        dlog("Spoofing as Pixel XL for: " + packageName);
-                        gPhotosProps.forEach((k, v) -> setPropValue(k, v));
-                    }
+                    gPhotosProps.forEach((k, v) -> setPropValue(k, v));
                     break;
                 default:
-                    if (SystemProperties.getBoolean("persist.sys.pixelprops.games", false)) {
+                    if (SystemProperties.getBoolean("persist.sys.pixelprops.games", true)) {
                         Map<String, Object> gamePropsToSpoof = null;
                         if (packagesToChangeROG1.contains(packageName)) {
                             dlog("Spoofing as Asus ROG 1 for: " + packageName);
@@ -263,15 +290,15 @@ public class PropImitationHooks {
 
     private static boolean shouldTryToCertifyDevice() {
         final boolean[] shouldCertify = {true};
-        final boolean was = isGmsAddAccountActivityOnTop();
-        final String reason = "GmsAddAccountActivityOnTop";
-        dlog("Skip spoofing build for GMS, because " + reason + "!");
+        boolean was = isGmsAddAccountActivityOnTop();
+        String reason = "GmsAddAccountActivityOnTop";
+        Log.d(TAG, "Skip spoofing build for GMS, because " + reason + "!");
         TaskStackListener taskStackListener = new TaskStackListener() {
             @Override
             public void onTaskStackChanged() {
-                final boolean isNow = isGmsAddAccountActivityOnTop();
+                boolean isNow = isGmsAddAccountActivityOnTop();
                 if (isNow ^ was) {
-                    dlog(String.format("%s changed: isNow=%b, was=%b, killing myself!", reason, isNow, was));
+                    Log.d(TAG, String.format("%s changed: isNow=%b, was=%b, killing myself!", reason, isNow, was));
                     shouldCertify[0] = false;
                 }
             }
@@ -280,18 +307,19 @@ public class PropImitationHooks {
             ActivityTaskManager.getService().registerTaskStackListener(taskStackListener);
         } catch (Exception e) {
             Log.e(TAG, "Failed to register task stack listener!", e);
-        }
-        if (shouldCertify[0]) {
-            try {
-                ActivityTaskManager.getService().unregisterTaskStackListener(taskStackListener); // this will be registered on next query
-            } catch (Exception e) {}
+        } finally {
+            if (shouldCertify[0]) {
+                try {
+                    ActivityTaskManager.getService().unregisterTaskStackListener(taskStackListener);
+                } catch (Exception e) {}
+            }
         }
         return shouldCertify[0];
     }
 
     private static boolean isGmsAddAccountActivityOnTop() {
         try {
-            final ActivityTaskManager.RootTaskInfo focusedTask =
+            ActivityTaskManager.RootTaskInfo focusedTask =
                     ActivityTaskManager.getService().getFocusedRootTaskInfo();
             return focusedTask != null && focusedTask.topActivity != null
                     && focusedTask.topActivity.equals(GMS_ADD_ACCOUNT_ACTIVITY);
@@ -299,6 +327,23 @@ public class PropImitationHooks {
             Log.e(TAG, "Unable to get top activity!", e);
         }
         return false;
+    }
+
+    private static boolean isDeviceTablet(Context context) {
+        if (context == null) {
+            return false;
+        }
+        Configuration configuration = context.getResources().getConfiguration();
+        DisplayMetrics displayMetrics = new DisplayMetrics();
+        WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        if (windowManager != null) {
+            windowManager.getDefaultDisplay().getMetrics(displayMetrics);
+        }
+        return (configuration.screenLayout & Configuration.SCREENLAYOUT_SIZE_MASK)
+                >= Configuration.SCREENLAYOUT_SIZE_LARGE
+                || displayMetrics.densityDpi == DisplayMetrics.DENSITY_XHIGH
+                || displayMetrics.densityDpi == DisplayMetrics.DENSITY_XXHIGH
+                || displayMetrics.densityDpi == DisplayMetrics.DENSITY_XXXHIGH;
     }
 
     private static void setPropValue(String key, Object value) {
@@ -360,7 +405,10 @@ public class PropImitationHooks {
 
     public static void onEngineGetCertificateChain() {
         // Check stack for SafetyNet or Play Integrity
-        if ((isCallerSafetyNet() || sIsFinsky) && !sIsSetupWizard && shouldTryToCertifyDevice()) {
+        if (!shouldTryToCertifyDevice()) {
+            Process.killProcess(Process.myPid());
+        }
+        if ((isCallerSafetyNet() || sIsFinsky) && !sIsSetupWizard) {
             dlog("Blocked key attestation sIsGms=" + sIsGms + " sIsFinsky=" + sIsFinsky);
             throw new UnsupportedOperationException();
         }
