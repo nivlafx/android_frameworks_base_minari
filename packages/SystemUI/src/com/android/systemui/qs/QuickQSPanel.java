@@ -27,6 +27,7 @@ import android.widget.LinearLayout;
 import com.android.internal.logging.UiEventLogger;
 import com.android.systemui.FontSizeUtils;
 import com.android.systemui.R;
+import com.android.systemui.Dependency;
 import com.android.systemui.plugins.qs.QSTile;
 import com.android.systemui.plugins.qs.QSTile.SignalState;
 import com.android.systemui.plugins.qs.QSTile.State;
@@ -44,10 +45,38 @@ public class QuickQSPanel extends QSPanel implements TunerService.Tunable {
 
     private boolean mDisabledByPolicy;
     private int mMaxTiles;
+    private boolean mShowQqsBrightnessSlider;
 
     public QuickQSPanel(Context context, AttributeSet attrs) {
         super(context, attrs);
         mMaxTiles = getResources().getInteger(R.integer.quick_qs_panel_max_tiles);
+        
+        TunerService.Tunable tunable = (key, newValue) -> {
+            switch (key) {
+                case QS_SHOW_AUTO_BRIGHTNESS:
+                     mShouldShowAutoBrightness = TunerService.parseIntegerSwitch(newValue, true);
+                    if (mAutoBrightnessView != null) {
+                        mAutoBrightnessView.setVisibility(mShouldShowAutoBrightness
+                                 ? View.VISIBLE : View.GONE);
+                    }
+                    break;
+                case QS_SHOW_BRIGHTNESS_SLIDER:
+                    mShowQqsBrightnessSlider =
+                           TunerService.parseInteger(newValue, 1) == 2;
+                    if (mBrightnessView != null) {
+                        mBrightnessView.setVisibility(mShowQqsBrightnessSlider ? VISIBLE : GONE);
+                        updatePadding();
+                    }
+                    break;
+                case QS_BRIGHTNESS_SLIDER_POSITION:
+                    mTop = TunerService.parseInteger(newValue, 0) == 0;
+                    updatePadding();
+                    break;
+                default:
+                    break;
+             }
+        };
+        Dependency.get(TunerService.class).addTunable(tunable, QS_BRIGHTNESS_SLIDER_POSITION, QS_SHOW_BRIGHTNESS_SLIDER);
     }
 
     @Override
@@ -64,6 +93,9 @@ public class QuickQSPanel extends QSPanel implements TunerService.Tunable {
         }
         mBrightnessView = view;
         mAutoBrightnessView = view.findViewById(R.id.brightness_icon);
+        if (mAutoBrightnessView != null) {
+            mAutoBrightnessView.setVisibility(mShouldShowAutoBrightness ? View.VISIBLE : View.GONE);
+        }
         setBrightnessViewMargin(mTop);
         if (mBrightnessView != null) {
             addView(mBrightnessView);
@@ -88,6 +120,7 @@ public class QuickQSPanel extends QSPanel implements TunerService.Tunable {
                 lp.bottomMargin = mContext.getResources()
                         .getDimensionPixelSize(R.dimen.qqs_bottom_brightness_margin_bottom);
             }
+            mBrightnessView.setVisibility(mShowQqsBrightnessSlider ? VISIBLE : GONE);
             mBrightnessView.setLayoutParams(lp);
         }
     }
@@ -158,20 +191,7 @@ public class QuickQSPanel extends QSPanel implements TunerService.Tunable {
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        switch (key) {
-            case QS_SHOW_BRIGHTNESS_SLIDER:
-                boolean value =
-                        TunerService.parseInteger(newValue, 1) > 1;
-                super.onTuningChanged(key, value ? newValue : "0");
-                break;
-            case QS_BRIGHTNESS_SLIDER_POSITION:
-                mTop = TunerService.parseInteger(newValue, 0) == 0;
-                updatePadding();
-                super.onTuningChanged(key, newValue);
-                break;
-            default:
-                super.onTuningChanged(key, newValue);
-         }
+
     }
 
     public int getNumQuickTiles() {

@@ -574,13 +574,11 @@ public class QSAnimator implements QSHost.Callback, PagedTileLayout.PageListener
     private void animateBrightnessSlider() {
         mBrightnessTranslationAnimator = null;
         mBrightnessOpacityAnimator = null;
-        View qsBrightness = mQsPanelController.getBrightnessView();
-        View qqsBrightness = mQuickQSPanelController.getBrightnessView();
-
-        if (mTunerService.getValue(QSPanel.QS_SHOW_BRIGHTNESS_SLIDER, 1) == 0) {
-            qsBrightness.setVisibility(View.GONE);
-            qqsBrightness.setVisibility(View.GONE);
-        }
+        final View qsBrightness = mQsPanelController.getBrightnessView();
+        final View qqsBrightness = mQuickQSPanelController.getBrightnessView();
+        final int qsShowBrightnessSliderValue = mTunerService.getValue(QSPanel.QS_SHOW_BRIGHTNESS_SLIDER, 1);
+        qsBrightness.setVisibility(qsShowBrightnessSliderValue >= 1 ? View.VISIBLE : View.GONE);
+        qqsBrightness.setVisibility(qsShowBrightnessSliderValue == 2 ? View.VISIBLE: View.GONE);
 
         if (qqsBrightness != null && qqsBrightness.getVisibility() == View.VISIBLE) {
             // animating in split shade mode
