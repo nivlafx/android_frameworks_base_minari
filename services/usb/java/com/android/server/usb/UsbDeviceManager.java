@@ -1664,7 +1664,7 @@ public class UsbDeviceManager implements ActivityTaskManagerInternal.ScreenObser
 
         public void setTrustRestrictUsb() {
             final int restrictUsb = LineageSettings.Global.getInt(mContentResolver,
-                    LineageSettings.Global.TRUST_RESTRICT_USB, 1);
+                    LineageSettings.Global.TRUST_RESTRICT_USB, 0);
             // Effective immediately, ejects any connected USB devices.
             // If the restriction is set to "allow when unlocked", only execute once USB is
             // disconnected and keyguard is showing, to avoid ejecting connected devices on lock,
