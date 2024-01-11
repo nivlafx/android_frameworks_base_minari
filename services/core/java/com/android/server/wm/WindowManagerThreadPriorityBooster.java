@@ -19,10 +19,7 @@ package com.android.server.wm;
 import static android.os.Process.THREAD_PRIORITY_DISPLAY;
 import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
 import static android.os.Process.myTid;
-import static android.os.Process.SCHED_FIFO;
-import static android.os.Process.SCHED_RESET_ON_FORK;
 import static android.os.Process.setThreadPriority;
-import static android.os.Process.setThreadScheduler;
 
 import static com.android.server.LockGuard.INDEX_WINDOW;
 
@@ -31,6 +28,7 @@ import android.os.SystemProperties;
 import com.android.internal.annotations.GuardedBy;
 import com.android.server.AnimationThread;
 import com.android.server.ThreadPriorityBooster;
+import com.android.server.am.ActivityManagerService;
 
 /**
  * Window manager version of {@link ThreadPriorityBooster} that boosts even more during app
@@ -100,14 +98,9 @@ class WindowManagerThreadPriorityBooster extends ThreadPriorityBooster {
         int priority = (mAppTransitionRunning || mBoundsAnimationRunning)
                 ? THREAD_PRIORITY_TOP_APP_BOOST : THREAD_PRIORITY_DISPLAY;
         setBoostToPriority(priority);
-        if (SystemProperties.getInt("sys.use_fifo_ui", 0) != 0 && priority == THREAD_PRIORITY_TOP_APP_BOOST) {
-            try {
-                setThreadScheduler(mAnimationThreadId, SCHED_FIFO | SCHED_RESET_ON_FORK, 1);
-                setThreadScheduler(mSurfaceAnimationThreadId, SCHED_FIFO | SCHED_RESET_ON_FORK, 1);
-            }  catch (Exception e) {}
-        } else {
-            setThreadPriority(mAnimationThreadId, priority);
-            setThreadPriority(mSurfaceAnimationThreadId, priority);
-        }
+        ActivityManagerService.scheduleAsFifoPriority(mAnimationThreadId, priority, true);
+        ActivityManagerService.scheduleAsFifoPriority(mSurfaceAnimationThreadId, priority, true);
+        setThreadPriority(mAnimationThreadId, priority);
+        setThreadPriority(mSurfaceAnimationThreadId, priority);
     }
 }
