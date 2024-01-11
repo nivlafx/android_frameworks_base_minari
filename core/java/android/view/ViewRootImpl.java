@@ -2191,7 +2191,7 @@ public final class ViewRootImpl implements ViewParent,
         } else {
             mDisplay = preferredDisplay;
         }
-        if (mHdrSdrRatioChangedListener != null && mDisplay != null) {
+        if (mHdrSdrRatioChangedListener != null && mDisplay != null && mDisplay.isHdrSdrRatioAvailable()) {
             mDisplay.registerHdrSdrRatioChangedListener(mExecutor, mHdrSdrRatioChangedListener);
         }
         mContext.updateDisplay(mDisplay.getDisplayId());
