@@ -73,7 +73,7 @@ import static android.os.Process.THREAD_GROUP_BACKGROUND;
 import static android.os.Process.THREAD_GROUP_DEFAULT;
 import static android.os.Process.THREAD_GROUP_RESTRICTED;
 import static android.os.Process.THREAD_GROUP_TOP_APP;
-import static android.os.Process.THREAD_PRIORITY_DISPLAY;
+import static android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY;
 import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
 import static android.os.Process.setProcessGroup;
 import static android.os.Process.setThreadPriority;
@@ -376,6 +376,8 @@ public class OomAdjuster {
     private final ActivityManagerGlobalLock mProcLock;
     // Threshold for B-services when in memory pressure
     int mBServiceAppThreshold = 16;
+    public static int mCurRenderThreadTid = -1;
+    public static int mCurAppPid = -1;
 
     private final int mNumSlots;
     private final ArrayList<ProcessRecord> mTmpProcessList = new ArrayList<ProcessRecord>();
@@ -1848,6 +1850,23 @@ public class OomAdjuster {
             foregroundActivities = true;
             hasVisibleActivities = true;
             procState = PROCESS_STATE_TOP;
+            if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
+                mCurRenderThreadTid = app.getRenderThreadTid();
+                mCurAppPid = app.getPid();
+                state.setSavedPriority(Process.getThreadPriority(mCurAppPid));
+                mService.scheduleAsFifoPriority(mCurAppPid, 1, true);
+                setThreadPriority(mCurAppPid, THREAD_PRIORITY_TOP_APP_BOOST);
+                if (mCurRenderThreadTid != 0) {
+                    mService.scheduleAsFifoPriority(mCurRenderThreadTid, 1, /* suppressLogs */true);
+                    setThreadPriority(mCurRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
+                }
+            } else if (mCurAppPid != -1 && mCurRenderThreadTid != -1 && mCurRenderThreadTid > 0) {
+                mService.scheduleAsRegularPriority(mCurAppPid,/* suppressLogs */ true);
+                setThreadPriority(mCurAppPid, state.getSavedPriority());
+                mService.scheduleAsRegularPriority(mCurRenderThreadTid, true); 
+                setThreadPriority(mCurRenderThreadTid, THREAD_PRIORITY_URGENT_DISPLAY);
+            }
+
             if (DEBUG_OOM_ADJ_REASON || logUid == appUid) {
                 reportOomAdjMessageLocked(TAG_OOM_ADJ, "Making top: " + app);
             }
@@ -3056,8 +3075,10 @@ public class OomAdjuster {
                             // Switch UI pipeline for app to SCHED_FIFO
                             state.setSavedPriority(Process.getThreadPriority(app.getPid()));
                             mService.scheduleAsFifoPriority(app.getPid(), 1, true);
+                            setThreadPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST);
                             if (renderThreadTid != 0) {
                                 mService.scheduleAsFifoPriority(renderThreadTid, 1, /* suppressLogs */true);
+                                setThreadPriority(renderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
                             }
                         }
                     } else if (oldSchedGroup == SCHED_GROUP_TOP_APP
@@ -3070,6 +3091,7 @@ public class OomAdjuster {
                             setThreadPriority(app.getPid(), state.getSavedPriority());
                             if (renderThreadTid != 0) {
                                 mService.scheduleAsRegularPriority(renderThreadTid, true); 
+                                setThreadPriority(renderThreadTid, THREAD_PRIORITY_URGENT_DISPLAY);
                             }
                         } catch (Exception e) {
                             Slog.w(TAG,
