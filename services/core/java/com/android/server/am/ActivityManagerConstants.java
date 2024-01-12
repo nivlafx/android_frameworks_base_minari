@@ -1312,13 +1312,7 @@ final class ActivityManagerConstants extends ContentObserver {
                 .map(ComponentName::unflattenFromString).collect(Collectors.toSet()));
         mCustomizedMaxCachedProcesses = context.getResources().getInteger(
                 com.android.internal.R.integer.config_customizedMaxCachedProcesses);
-        CUR_MAX_CACHED_PROCESSES = Integer.min(mCustomizedMaxCachedProcesses, MAX_CACHED_PROCESSES);
-        CUR_MAX_EMPTY_PROCESSES = computeEmptyProcessLimit(CUR_MAX_CACHED_PROCESSES);
-
-        final int rawMaxEmptyProcesses = computeEmptyProcessLimit(CUR_MAX_CACHED_PROCESSES);
-        CUR_TRIM_EMPTY_PROCESSES = rawMaxEmptyProcesses / 2;
-        CUR_TRIM_CACHED_PROCESSES = (CUR_MAX_CACHED_PROCESSES - rawMaxEmptyProcesses) / 3;
-
+        updateMaxCachedProcesses();
     }
 
     public void start(ContentResolver resolver) {
@@ -1870,11 +1864,10 @@ final class ActivityManagerConstants extends ContentObserver {
 
     private void updateMaxCachedProcesses() {
         CUR_MAX_CACHED_PROCESSES = mCustomizedMaxCachedProcesses;
-        CUR_MAX_EMPTY_PROCESSES = computeEmptyProcessLimit(CUR_MAX_CACHED_PROCESSES);
-
-        final int rawMaxEmptyProcesses = computeEmptyProcessLimit(CUR_MAX_CACHED_PROCESSES);
-        CUR_TRIM_EMPTY_PROCESSES = rawMaxEmptyProcesses / 2;
-        CUR_TRIM_CACHED_PROCESSES = (CUR_MAX_CACHED_PROCESSES - rawMaxEmptyProcesses) / 3;
+        CUR_MAX_EMPTY_PROCESSES = computeEmptyProcessLimit(DEFAULT_MAX_CACHED_PROCESSES);
+        final int rawEmptyProcesses = computeEmptyProcessLimit(CUR_MAX_EMPTY_PROCESSES);
+        CUR_TRIM_EMPTY_PROCESSES = rawEmptyProcesses;
+        CUR_TRIM_CACHED_PROCESSES = DEFAULT_MAX_CACHED_PROCESSES;
     }
 
     private void updateProactiveKillsEnabled() {

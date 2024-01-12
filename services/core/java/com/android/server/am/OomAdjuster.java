@@ -461,7 +461,7 @@ public class OomAdjuster {
         mTmpQueue = new ArrayDeque<ProcessRecord>(mConstants.CUR_MAX_CACHED_PROCESSES << 1);
         mNumSlots = ((CACHED_APP_MAX_ADJ - CACHED_APP_MIN_ADJ + 1) >> 1)
                 / CACHED_APP_IMPORTANCE_LEVELS;
-        mBServiceAppThreshold = (mConstants.CUR_MAX_CACHED_PROCESSES / 10);
+        mBServiceAppThreshold = (mConstants.CUR_MAX_CACHED_PROCESSES);
     }
 
     void initSettings() {
@@ -1296,7 +1296,7 @@ public class OomAdjuster {
                 for (int s = app.mServices.numberOfRunningServices() - 1; s >= 0; s--) {
                     ServiceRecord sr = app.mServices.getRunningServiceAt(s);
 
-                    if (SystemClock.uptimeMillis() - sr.lastActivity < (mBServiceAppThreshold * 100)) {
+                    if (SystemClock.uptimeMillis() - sr.lastActivity < (mBServiceAppThreshold * 80)) {
                         continue;
                     }
                     if (sr.lastActivity < minServiceLastActivity) {
