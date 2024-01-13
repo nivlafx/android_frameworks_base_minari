@@ -50,8 +50,6 @@ import com.android.systemui.recents.OverviewProxyService;
 import com.android.systemui.shared.system.QuickStepContract;
 import com.android.systemui.tuner.TunerService;
 
-import lineageos.providers.LineageSettings;
-
 import java.io.PrintWriter;
 import java.lang.ref.WeakReference;
 import java.util.Objects;
@@ -91,10 +89,8 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
     private static final String ABSOLUTE_SUFFIX = "A";
     private static final String ABSOLUTE_VERTICAL_CENTERED_SUFFIX = "C";
 
-    private static final String KEY_NAVIGATION_HINT =
-            "lineagesystem:" + LineageSettings.System.NAVIGATION_BAR_HINT;
     private static final String OVERLAY_NAVIGATION_HIDE_HINT =
-            "org.lineageos.overlay.customization.navbar.nohint";
+            "com.android.overlay.customization.no_gesture";
 
     private static class Listener implements NavigationModeController.ModeChangedListener {
         private final WeakReference<NavigationBarInflaterView> mSelf;
@@ -161,18 +157,23 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
 
     @Override
     public void onTuningChanged(String key, String newValue) {
-        if (GESTURE_NAVBAR_LENGTH_MODE.equals(key)) {
-            mNavBarWidth = TunerService.parseInteger(newValue, 3);
-            onLikelyDefaultLayoutChange();
-        } else if (GESTURE_NAVBAR_RADIUS.equals(key)) {
-            onLikelyDefaultLayoutChange();
-        } else if (NAV_BAR_INVERSE.equals(key)) {
-            mInverseLayout = TunerService.parseIntegerSwitch(newValue, false);
-            updateLayoutInversion();
-        } else if (KEY_NAVIGATION_HINT.equals(key)) {
-            mIsHintEnabled = TunerService.parseIntegerSwitch(newValue, true);
-            updateHint();
-            onLikelyDefaultLayoutChange();
+        switch (key) {
+            case GESTURE_NAVBAR_LENGTH_MODE:
+                mNavBarWidth = TunerService.parseInteger(newValue, 3);
+                mIsHintEnabled = mNavBarWidth != 0;
+                updateHint();
+                onLikelyDefaultLayoutChange();
+                break;
+            case GESTURE_NAVBAR_RADIUS:
+                updateHint();
+                onLikelyDefaultLayoutChange();
+                break;
+            case NAV_BAR_INVERSE:
+                mInverseLayout = TunerService.parseIntegerSwitch(newValue, false);
+                updateLayoutInversion();
+                break;
+            default:
+                break;
         }
     }
 
@@ -216,7 +217,6 @@ public class NavigationBarInflaterView extends FrameLayout implements TunerServi
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         Dependency.get(TunerService.class).addTunable(this, NAV_BAR_INVERSE);
-        Dependency.get(TunerService.class).addTunable(this, KEY_NAVIGATION_HINT);
         Dependency.get(TunerService.class).addTunable(this, GESTURE_NAVBAR_LENGTH_MODE, GESTURE_NAVBAR_RADIUS);
     }
 

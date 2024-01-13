@@ -2521,15 +2521,23 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
             final int navBarColor = a.getColor(R.styleable.Window_navigationBarColor,
                     navBarDefaultColor);
 
-            mNavigationBarColor =
-                    navBarColor == navBarDefaultColor
-                            && !context.getResources().getBoolean(
-                                    R.bool.config_navBarDefaultTransparent)
-                    ? navBarCompatibleColor
-                    : navBarColor;
+            final int gestureLength = Settings.System.getInt(getContext().getContentResolver(),
+                "gesture_navbar_length_mode", 3);
+            if (gestureLength != 0) { 
+                mNavigationBarColor =
+                        navBarColor == navBarDefaultColor
+                                && !context.getResources().getBoolean(
+                                        R.bool.config_navBarDefaultTransparent)
+                        ? navBarCompatibleColor
+                        : navBarColor;
+                        
+                mNavigationBarDividerColor = a.getColor(R.styleable.Window_navigationBarDividerColor,
+                        Color.TRANSPARENT);
+            } else {
+                mNavigationBarColor = Color.TRANSPARENT;
+                mNavigationBarDividerColor = Color.TRANSPARENT;
+            }
 
-            mNavigationBarDividerColor = a.getColor(R.styleable.Window_navigationBarDividerColor,
-                    Color.TRANSPARENT);
         }
         if (!targetPreQ) {
             mEnsureStatusBarContrastWhenTransparent = a.getBoolean(
@@ -3885,20 +3893,26 @@ public class PhoneWindow extends Window implements MenuBuilder.Callback {
 
     @Override
     public void setNavigationBarColor(int color) {
-        mNavigationBarColor = color;
+        final int gestureLength = Settings.System.getInt(getContext().getContentResolver(),
+                "gesture_navbar_length_mode", 3);
+        final int navBarColor = gestureLength == 0 ? Color.TRANSPARENT : color;
+        mNavigationBarColor = navBarColor;
         mForcedNavigationBarColor = true;
         if (mDecor != null) {
             mDecor.updateColorViews(null, false /* animate */);
         }
         final WindowControllerCallback callback = getWindowControllerCallback();
         if (callback != null) {
-            getWindowControllerCallback().updateNavigationBarColor(color);
+            getWindowControllerCallback().updateNavigationBarColor(navBarColor);
         }
     }
 
     @Override
     public void setNavigationBarDividerColor(int navigationBarDividerColor) {
-        mNavigationBarDividerColor = navigationBarDividerColor;
+        final int gestureLength = Settings.System.getInt(getContext().getContentResolver(),
+                "gesture_navbar_length_mode", 3);
+        final int navBarColor = gestureLength == 0 ? Color.TRANSPARENT : navigationBarDividerColor;
+        mNavigationBarDividerColor = navBarColor;
         if (mDecor != null) {
             mDecor.updateColorViews(null, false /* animate */);
         }
