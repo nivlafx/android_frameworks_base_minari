@@ -77,6 +77,7 @@ public class QuickQSPanel extends QSPanel implements TunerService.Tunable {
              }
         };
         Dependency.get(TunerService.class).addTunable(tunable, QS_BRIGHTNESS_SLIDER_POSITION, QS_SHOW_BRIGHTNESS_SLIDER);
+        Dependency.get(TunerService.class).addTunable(tunable, QS_TILE_ANIMATION_STYLE, QS_TILE_ANIMATION_DURATION, QS_TILE_ANIMATION_INTERPOLATOR);
     }
 
     @Override
