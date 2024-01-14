@@ -73,9 +73,10 @@ import static android.os.Process.THREAD_GROUP_BACKGROUND;
 import static android.os.Process.THREAD_GROUP_DEFAULT;
 import static android.os.Process.THREAD_GROUP_RESTRICTED;
 import static android.os.Process.THREAD_GROUP_TOP_APP;
-import static android.os.Process.THREAD_PRIORITY_URGENT_DISPLAY;
+import static android.os.Process.THREAD_PRIORITY_DISPLAY;
 import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
 import static android.os.Process.setProcessGroup;
+import static android.os.Process.setCgroupProcsProcessGroup;
 import static android.os.Process.setThreadPriority;
 import static android.os.Process.setThreadScheduler;
 
@@ -440,16 +441,18 @@ public class OomAdjuster {
         mProcessGroupHandler = new Handler(adjusterThread.getLooper(), msg -> {
             final int pid = msg.arg1;
             final int group = msg.arg2;
+            final ProcessRecord app = (ProcessRecord)msg.obj;
             if (pid == ActivityManagerService.MY_PID) {
                 // Skip setting the process group for system_server, keep it as default.
                 return true;
             }
             if (Trace.isTagEnabled(Trace.TRACE_TAG_ACTIVITY_MANAGER)) {
                 Trace.traceBegin(Trace.TRACE_TAG_ACTIVITY_MANAGER, "setProcessGroup "
-                        + msg.obj + " to " + group);
+                        + app.processName + " to " + group);
             }
             try {
-                setProcessGroup(pid, group);
+                setCgroupProcsProcessGroup(app.info.uid, pid, group == SCHED_GROUP_TOP_APP 
+                    || group == SCHED_GROUP_TOP_APP_BOUND ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
             } catch (Exception e) {
                 if (DEBUG_ALL) {
                     Slog.w(TAG, "Failed setting process group of " + pid + " to " + group, e);
@@ -1850,21 +1853,19 @@ public class OomAdjuster {
             foregroundActivities = true;
             hasVisibleActivities = true;
             procState = PROCESS_STATE_TOP;
+
             if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
                 mCurRenderThreadTid = app.getRenderThreadTid();
                 mCurAppPid = app.getPid();
                 state.setSavedPriority(Process.getThreadPriority(mCurAppPid));
-                mService.scheduleAsFifoPriority(mCurAppPid, 1, true);
+                mService.scheduleAsFifoPriority(mCurAppPid, THREAD_PRIORITY_TOP_APP_BOOST, true);
                 setThreadPriority(mCurAppPid, THREAD_PRIORITY_TOP_APP_BOOST);
+                setCgroupProcsProcessGroup(appUid, mCurAppPid, schedGroup == SCHED_GROUP_TOP_APP 
+                    || schedGroup == SCHED_GROUP_TOP_APP_BOUND ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
                 if (mCurRenderThreadTid != 0) {
-                    mService.scheduleAsFifoPriority(mCurRenderThreadTid, 1, /* suppressLogs */true);
+                    mService.scheduleAsFifoPriority(mCurRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST, /* suppressLogs */true);
                     setThreadPriority(mCurRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
                 }
-            } else if (mCurAppPid != -1 && mCurRenderThreadTid != -1 && mCurRenderThreadTid > 0) {
-                mService.scheduleAsRegularPriority(mCurAppPid,/* suppressLogs */ true);
-                setThreadPriority(mCurAppPid, state.getSavedPriority());
-                mService.scheduleAsRegularPriority(mCurRenderThreadTid, true); 
-                setThreadPriority(mCurRenderThreadTid, THREAD_PRIORITY_URGENT_DISPLAY);
             }
 
             if (DEBUG_OOM_ADJ_REASON || logUid == appUid) {
@@ -3065,8 +3066,15 @@ public class OomAdjuster {
                         break;
                 }
                 mProcessGroupHandler.sendMessage(mProcessGroupHandler.obtainMessage(
-                        0 /* unused */, app.getPid(), processGroup, app.processName));
+                        0 /* unused */, app.getPid(), processGroup, app));
                 try {
+                    if (oldSchedGroup != curSchedGroup) {
+                        int decremented = --uidRec.numSchedGroup[oldSchedGroup];
+                        int incremented = ++uidRec.numSchedGroup[curSchedGroup];
+                        if (decremented == 0 || incremented == 1) {
+                            mService.updateCgroupPrioLocked(uidRec);
+                        }
+                    }
                     final int renderThreadTid = app.getRenderThreadTid();
                     if (curSchedGroup == SCHED_GROUP_TOP_APP) {
                         // do nothing if we already switched to RT
@@ -3074,10 +3082,10 @@ public class OomAdjuster {
                             app.getWindowProcessController().onTopProcChanged();
                             // Switch UI pipeline for app to SCHED_FIFO
                             state.setSavedPriority(Process.getThreadPriority(app.getPid()));
-                            mService.scheduleAsFifoPriority(app.getPid(), 1, true);
+                            mService.scheduleAsFifoPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST, true);
                             setThreadPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST);
                             if (renderThreadTid != 0) {
-                                mService.scheduleAsFifoPriority(renderThreadTid, 1, /* suppressLogs */true);
+                                mService.scheduleAsFifoPriority(renderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST, /* suppressLogs */true);
                                 setThreadPriority(renderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
                             }
                         }
@@ -3091,7 +3099,7 @@ public class OomAdjuster {
                             setThreadPriority(app.getPid(), state.getSavedPriority());
                             if (renderThreadTid != 0) {
                                 mService.scheduleAsRegularPriority(renderThreadTid, true); 
-                                setThreadPriority(renderThreadTid, THREAD_PRIORITY_URGENT_DISPLAY);
+                                setThreadPriority(renderThreadTid, THREAD_PRIORITY_DISPLAY);
                             }
                         } catch (Exception e) {
                             Slog.w(TAG,
@@ -3268,7 +3276,7 @@ public class OomAdjuster {
                 // {@link SCHED_GROUP_TOP_APP}. We don't check render thread because it
                 // is not ready when attaching.
                 app.getWindowProcessController().onTopProcChanged();
-                mService.scheduleAsFifoPriority(app.getPid(), 1, true);
+                mService.scheduleAsFifoPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST, true);
                 setThreadPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST);
                 if (isScreenOnOrAnimatingLocked(state)) {
                     initialSchedGroup = SCHED_GROUP_TOP_APP;

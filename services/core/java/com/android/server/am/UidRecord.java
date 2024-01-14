@@ -39,7 +39,9 @@ import java.util.function.Consumer;
 public final class UidRecord {
     private final ActivityManagerService mService;
     private final ActivityManagerGlobalLock mProcLock;
-    private final int mUid;
+    public final int mUid;
+    final int[] numSchedGroup = new int[5]; // number of processes in this uid of each schedgroup
+    int setSchedGroup;
 
     @CompositeRWLock({"mService", "mProcLock"})
     private int mCurProcState;

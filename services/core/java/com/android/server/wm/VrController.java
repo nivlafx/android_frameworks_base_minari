@@ -16,6 +16,8 @@
 
 package com.android.server.wm;
 
+import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
+
 import android.content.ComponentName;
 import android.os.Process;
 import android.service.vr.IPersistentVrStateCallbacks;
@@ -350,7 +352,7 @@ final class VrController {
 
         if (newTid > 0) {
             mVrRenderThreadTid = newTid;
-            ActivityManagerService.scheduleAsFifoPriority(mVrRenderThreadTid, 1, suppressLogs);
+            ActivityManagerService.scheduleAsFifoPriority(mVrRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST, suppressLogs);
         }
         return mVrRenderThreadTid;
     }

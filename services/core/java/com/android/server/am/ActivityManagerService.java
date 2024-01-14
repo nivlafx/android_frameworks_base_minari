@@ -122,8 +122,11 @@ import static android.os.Process.myPid;
 import static android.os.Process.myUid;
 import static android.os.Process.readProcFile;
 import static android.os.Process.sendSignal;
+import static android.os.Process.putProc;
+import static android.os.Process.setCgroupProcsProcessGroup;
 import static android.os.Process.setThreadPriority;
 import static android.os.Process.setThreadScheduler;
+import static android.os.Process.setUidPrio;
 import static android.provider.Settings.Global.ALWAYS_FINISH_ACTIVITIES;
 import static android.provider.Settings.Global.DEBUG_APP;
 import static android.provider.Settings.Global.WAIT_FOR_DEBUGGER;
@@ -523,6 +526,9 @@ public class ActivityManagerService extends IActivityManager.Stub
 
     private static final String SYSTEM_PROPERTY_DEVICE_PROVISIONED =
             "persist.sys.device_provisioned";
+
+    // indexed by SCHED_GROUP_* values
+    static final int[] CGROUP_CPU_SHARES = new int[] {1024, 1024, 1024, 20480, 4096};
 
     static final String TAG = TAG_WITH_CLASS_NAME ? "ActivityManagerService" : TAG_AM;
     static final String TAG_BACKUP = TAG + POSTFIX_BACKUP;
@@ -4463,6 +4469,25 @@ public class ActivityManagerService extends IActivityManager.Stub
         return didSomething;
     }
 
+    final void updateCgroupPrioLocked(final UidRecord uidRec) {
+        int sg = ProcessList.SCHED_GROUP_DEFAULT;
+        if (uidRec.numSchedGroup[ProcessList.SCHED_GROUP_TOP_APP] > 0) {
+            sg = ProcessList.SCHED_GROUP_TOP_APP;
+        } else if (uidRec.numSchedGroup[ProcessList.SCHED_GROUP_TOP_APP_BOUND] > 0) {
+            sg = ProcessList.SCHED_GROUP_TOP_APP_BOUND;
+        } else if (uidRec.numSchedGroup[ProcessList.SCHED_GROUP_BACKGROUND] == uidRec.getNumOfProcs()) {
+            sg = ProcessList.SCHED_GROUP_BACKGROUND;
+        } else if (uidRec.numSchedGroup[ProcessList.SCHED_GROUP_RESTRICTED] == uidRec.getNumOfProcs()) {
+            sg = ProcessList.SCHED_GROUP_RESTRICTED;
+        }
+        if (sg != uidRec.setSchedGroup) {
+            uidRec.setSchedGroup = sg;
+            if (UserHandle.isApp(uidRec.mUid) || UserHandle.isIsolated(uidRec.mUid)) {
+                Process.setUidPrio(uidRec.mUid, CGROUP_CPU_SHARES[sg]);
+            }
+        }
+    }
+
     @GuardedBy("this")
     void handleProcessStartOrKillTimeoutLocked(ProcessRecord app, boolean isKillTimeout) {
         final int pid = app.getPid();
@@ -4619,6 +4644,11 @@ public class ActivityManagerService extends IActivityManager.Stub
         // process, clean it up now.
         if (app.getThread() != null) {
             handleAppDiedLocked(app, pid, true, true, false /* fromBinderDied */);
+        }
+
+        if (UserHandle.isApp(app.uid) || UserHandle.isIsolated(app.uid)) {
+            Process.setCgroupProcsProcessGroup(app.uid, app.getPid(), Process.THREAD_GROUP_BACKGROUND);
+            Process.putProc(app.getPid(), app.uid);
         }
 
         // Tell the process all about itself.
@@ -7828,6 +7858,11 @@ public class ActivityManagerService extends IActivityManager.Stub
     public static boolean scheduleAsRegularPriority(int tid, boolean suppressLogs) {
         try {
             Process.setThreadScheduler(tid, Process.SCHED_OTHER, 0);
+            int uid = Process.getUidForPid(tid);
+            Process.setCgroupProcsProcessGroup(uid, tid, Process.THREAD_GROUP_DEFAULT);
+            if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
+                Process.putProc(tid, uid);
+            }
             return true;
         } catch (IllegalArgumentException e) {
             if (!suppressLogs) {
@@ -7851,6 +7886,17 @@ public class ActivityManagerService extends IActivityManager.Stub
      */
     public static boolean scheduleAsFifoPriority(int tid, int prio, boolean suppressLogs) {
         try {
+            int uid = Process.getUidForPid(tid);
+            if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
+                Process.putThreadInRoot(tid);
+            }
+            int tg;
+            if (prio <= THREAD_PRIORITY_TOP_APP_BOOST) {
+                tg = Process.THREAD_GROUP_TOP_APP;
+            } else {
+                tg = Process.THREAD_GROUP_DEFAULT;
+            }
+            Process.setCgroupProcsProcessGroup(uid, tid, tg);
             Process.setThreadScheduler(tid, Process.SCHED_FIFO | Process.SCHED_RESET_ON_FORK, prio);
             return true;
         } catch (IllegalArgumentException e) {
@@ -7890,7 +7936,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                 // promote to FIFO now
                 if (proc.mState.getCurrentSchedulingGroup() == ProcessList.SCHED_GROUP_TOP_APP) {
                     if (DEBUG_OOM_ADJ) Slog.d("UI_FIFO", "Promoting " + tid + "out of band");
-                    scheduleAsFifoPriority(proc.getRenderThreadTid(), /*prio*/1, /*noLogs*/true);
+                    scheduleAsFifoPriority(proc.getRenderThreadTid(), THREAD_PRIORITY_TOP_APP_BOOST, /*noLogs*/true);
                     setThreadPriority(proc.getRenderThreadTid(), THREAD_PRIORITY_TOP_APP_BOOST);
                 }
             }
