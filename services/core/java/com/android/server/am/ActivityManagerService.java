@@ -106,6 +106,7 @@ import static android.os.Process.SE_UID;
 import static android.os.Process.SHELL_UID;
 import static android.os.Process.SIGNAL_USR1;
 import static android.os.Process.SYSTEM_UID;
+import static android.os.Process.THREAD_PRIORITY_DEFAULT;
 import static android.os.Process.THREAD_PRIORITY_FOREGROUND;
 import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
 import static android.os.Process.ZYGOTE_POLICY_FLAG_BATCH_LAUNCH;
@@ -7891,6 +7892,8 @@ public class ActivityManagerService extends IActivityManager.Stub
                 int tg;
                 if (prio <= THREAD_PRIORITY_TOP_APP_BOOST) {
                     tg = Process.THREAD_GROUP_TOP_APP;
+                } else if (prio > THREAD_PRIORITY_DEFAULT) {
+                    tg = Process.THREAD_GROUP_BACKGROUND;
                 } else {
                     tg = Process.THREAD_GROUP_DEFAULT;
                 }

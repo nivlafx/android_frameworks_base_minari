@@ -453,7 +453,15 @@ public class OomAdjuster {
                         + app.processName + " to " + group);
             }
             try {
-                setCgroupProcsProcessGroup(app.info.uid, pid, group >= SCHED_GROUP_TOP_APP ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
+                int tg;
+                if (group >= SCHED_GROUP_TOP_APP) {
+                    tg = THREAD_GROUP_TOP_APP;
+                } else if (group < SCHED_GROUP_DEFAULT) {
+                    tg = THREAD_GROUP_BACKGROUND;
+                } else {
+                    tg = THREAD_GROUP_DEFAULT;
+                }
+                setCgroupProcsProcessGroup(app.info.uid, pid, tg);
             } catch (Exception e) {
                 if (DEBUG_ALL) {
                     Slog.w(TAG, "Failed setting process group of " + pid + " to " + group, e);
@@ -1859,11 +1867,18 @@ public class OomAdjuster {
                 if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
                     mCurRenderThreadTid = app.getRenderThreadTid();
                     mCurAppPid = app.getPid();
-                    int threadGroup = schedGroup >= SCHED_GROUP_TOP_APP ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT;
-                    int schedPrio = schedGroup >= SCHED_GROUP_TOP_APP ? THREAD_PRIORITY_TOP_APP_BOOST : THREAD_PRIORITY_DEFAULT;
+                    int schedPrio;
+                    int tg;
+                    if (schedGroup >= SCHED_GROUP_TOP_APP) {
+                        tg = THREAD_GROUP_TOP_APP;
+                        schedPrio = THREAD_PRIORITY_TOP_APP_BOOST;
+                    } else {
+                        tg = THREAD_GROUP_DEFAULT;
+                        schedPrio = THREAD_PRIORITY_DEFAULT;
+                    }
                     mService.scheduleAsFifoPriority(mCurAppPid, schedPrio, true);
                     setThreadPriority(mCurAppPid, schedPrio);
-                    setCgroupProcsProcessGroup(appUid, mCurAppPid, threadGroup);
+                    setCgroupProcsProcessGroup(appUid, mCurAppPid, tg);
                     if (mCurRenderThreadTid != 0) {
                         mService.scheduleAsFifoPriority(mCurRenderThreadTid, schedPrio, /* suppressLogs */true);
                         setThreadPriority(mCurRenderThreadTid, schedPrio);
