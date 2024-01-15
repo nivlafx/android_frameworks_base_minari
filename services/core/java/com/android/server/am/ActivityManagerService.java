@@ -528,7 +528,7 @@ public class ActivityManagerService extends IActivityManager.Stub
             "persist.sys.device_provisioned";
 
     // indexed by SCHED_GROUP_* values
-    static final int[] CGROUP_CPU_SHARES = new int[] {1024, 1024, 1024, 20480, 4096};
+    static final int[] CGROUP_CPU_SHARES = new int[] {512, 1024, 1024, 20480, 20480};
 
     static final String TAG = TAG_WITH_CLASS_NAME ? "ActivityManagerService" : TAG_AM;
     static final String TAG_BACKUP = TAG + POSTFIX_BACKUP;
@@ -7859,8 +7859,8 @@ public class ActivityManagerService extends IActivityManager.Stub
         try {
             Process.setThreadScheduler(tid, Process.SCHED_OTHER, 0);
             int uid = Process.getUidForPid(tid);
-            Process.setCgroupProcsProcessGroup(uid, tid, Process.THREAD_GROUP_DEFAULT);
             if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
+                Process.setCgroupProcsProcessGroup(uid, tid, Process.THREAD_GROUP_DEFAULT);
                 Process.putProc(tid, uid);
             }
             return true;
@@ -7888,15 +7888,15 @@ public class ActivityManagerService extends IActivityManager.Stub
         try {
             int uid = Process.getUidForPid(tid);
             if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
+                int tg;
+                if (prio <= THREAD_PRIORITY_TOP_APP_BOOST) {
+                    tg = Process.THREAD_GROUP_TOP_APP;
+                } else {
+                    tg = Process.THREAD_GROUP_DEFAULT;
+                }
+                Process.setCgroupProcsProcessGroup(uid, tid, tg);
                 Process.putThreadInRoot(tid);
             }
-            int tg;
-            if (prio <= THREAD_PRIORITY_TOP_APP_BOOST) {
-                tg = Process.THREAD_GROUP_TOP_APP;
-            } else {
-                tg = Process.THREAD_GROUP_DEFAULT;
-            }
-            Process.setCgroupProcsProcessGroup(uid, tid, tg);
             Process.setThreadScheduler(tid, Process.SCHED_FIFO | Process.SCHED_RESET_ON_FORK, prio);
             return true;
         } catch (IllegalArgumentException e) {

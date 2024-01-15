@@ -73,6 +73,7 @@ import static android.os.Process.THREAD_GROUP_BACKGROUND;
 import static android.os.Process.THREAD_GROUP_DEFAULT;
 import static android.os.Process.THREAD_GROUP_RESTRICTED;
 import static android.os.Process.THREAD_GROUP_TOP_APP;
+import static android.os.Process.THREAD_PRIORITY_DEFAULT;
 import static android.os.Process.THREAD_PRIORITY_DISPLAY;
 import static android.os.Process.THREAD_PRIORITY_TOP_APP_BOOST;
 import static android.os.Process.setProcessGroup;
@@ -150,6 +151,7 @@ import android.os.Process;
 import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.os.UserHandle;
 import android.util.ArrayMap;
 import android.util.ArraySet;
 import android.util.Slog;
@@ -451,8 +453,7 @@ public class OomAdjuster {
                         + app.processName + " to " + group);
             }
             try {
-                setCgroupProcsProcessGroup(app.info.uid, pid, group == SCHED_GROUP_TOP_APP 
-                    || group == SCHED_GROUP_TOP_APP_BOUND ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
+                setCgroupProcsProcessGroup(app.info.uid, pid, group >= SCHED_GROUP_TOP_APP ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
             } catch (Exception e) {
                 if (DEBUG_ALL) {
                     Slog.w(TAG, "Failed setting process group of " + pid + " to " + group, e);
@@ -1854,17 +1855,19 @@ public class OomAdjuster {
             hasVisibleActivities = true;
             procState = PROCESS_STATE_TOP;
 
-            if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
-                mCurRenderThreadTid = app.getRenderThreadTid();
-                mCurAppPid = app.getPid();
-                state.setSavedPriority(Process.getThreadPriority(mCurAppPid));
-                mService.scheduleAsFifoPriority(mCurAppPid, THREAD_PRIORITY_TOP_APP_BOOST, true);
-                setThreadPriority(mCurAppPid, THREAD_PRIORITY_TOP_APP_BOOST);
-                setCgroupProcsProcessGroup(appUid, mCurAppPid, schedGroup == SCHED_GROUP_TOP_APP 
-                    || schedGroup == SCHED_GROUP_TOP_APP_BOUND ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT);
-                if (mCurRenderThreadTid != 0) {
-                    mService.scheduleAsFifoPriority(mCurRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST, /* suppressLogs */true);
-                    setThreadPriority(mCurRenderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
+            if (UserHandle.isApp(appUid) || UserHandle.isIsolated(appUid)) {
+                if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
+                    mCurRenderThreadTid = app.getRenderThreadTid();
+                    mCurAppPid = app.getPid();
+                    int threadGroup = schedGroup >= SCHED_GROUP_TOP_APP ? THREAD_GROUP_TOP_APP : THREAD_GROUP_DEFAULT;
+                    int schedPrio = schedGroup >= SCHED_GROUP_TOP_APP ? THREAD_PRIORITY_TOP_APP_BOOST : THREAD_PRIORITY_DEFAULT;
+                    mService.scheduleAsFifoPriority(mCurAppPid, schedPrio, true);
+                    setThreadPriority(mCurAppPid, schedPrio);
+                    setCgroupProcsProcessGroup(appUid, mCurAppPid, threadGroup);
+                    if (mCurRenderThreadTid != 0) {
+                        mService.scheduleAsFifoPriority(mCurRenderThreadTid, schedPrio, /* suppressLogs */true);
+                        setThreadPriority(mCurRenderThreadTid, schedPrio);
+                    }
                 }
             }
 
