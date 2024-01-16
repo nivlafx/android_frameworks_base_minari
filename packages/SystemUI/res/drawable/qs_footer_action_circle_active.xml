@@ -9,7 +9,7 @@
             <solid
                 android:color="@android:color/white" />
             <corners
-                android:radius="@dimen/qs_footer_action_corner_radius" />
+                android:radius="100dp" />
         </shape>
     </item>
     <item>
@@ -18,7 +18,7 @@
             <solid
                 android:color="?android:attr/colorAccent" />
             <corners
-                android:radius="@dimen/qs_footer_action_corner_radius" />
+                android:radius="100dp" />
         </shape>
     </item>
 </ripple>

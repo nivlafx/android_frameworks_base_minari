@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+  android:gravity="center"
+  android:layout_gravity="center_horizontal"
+  android:orientation="vertical"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  xmlns:android="http://schemas.android.com/apk/res/android">
+  
+    <com.android.systemui.lockscreen.LockScreenWidgets
+        android:layout_gravity="center_horizontal" 
+        android:id="@+id/lockscreen_widgets"
+        android:orientation="horizontal" 
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" 
+        android:layout_marginVertical="20dp" >
+        	
+        <com.android.systemui.statusbar.AlphaOptimizedImageView
+            android:gravity="center"
+            android:id="@+id/kg_item_placeholder1"
+            android:background="@drawable/qs_footer_action_circle"
+            android:padding="@dimen/qs_widget_shortcut_icon_padding"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_width="@dimen/qs_footer_circle_size"
+            android:layout_height="@dimen/qs_footer_circle_size"
+            android:src="@drawable/ic_flashlight_off"
+            android:tint="?android:attr/textColorPrimary"
+            android:layout_marginHorizontal="@dimen/kg_widgets_horizontal_margin" />
+            
+        <com.android.systemui.statusbar.AlphaOptimizedImageView
+            android:gravity="center"
+            android:id="@+id/kg_item_placeholder2"
+            android:background="@drawable/qs_footer_action_circle"
+            android:padding="@dimen/qs_widget_shortcut_icon_padding"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_width="@dimen/qs_footer_circle_size"
+            android:layout_height="@dimen/qs_footer_circle_size"
+            android:src="@drawable/ic_flashlight_off"
+            android:tint="?android:attr/textColorPrimary"
+            android:layout_marginHorizontal="@dimen/kg_widgets_horizontal_margin" />
+
+        <com.android.systemui.statusbar.AlphaOptimizedImageView
+            android:gravity="center"
+            android:id="@+id/kg_item_placeholder3"
+            android:background="@drawable/qs_footer_action_circle"
+            android:padding="@dimen/qs_widget_shortcut_icon_padding"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_width="@dimen/qs_footer_circle_size"
+            android:layout_height="@dimen/qs_footer_circle_size"
+            android:src="@drawable/ic_flashlight_off"
+            android:tint="?android:attr/textColorPrimary"
+            android:layout_marginHorizontal="@dimen/kg_widgets_horizontal_margin" />
+
+        <com.android.systemui.statusbar.AlphaOptimizedImageView
+            android:gravity="center"
+            android:id="@+id/kg_item_placeholder4"
+            android:background="@drawable/qs_footer_action_circle"
+            android:padding="@dimen/qs_widget_shortcut_icon_padding"
+            android:focusable="true"
+            android:clickable="true"
+            android:layout_width="@dimen/qs_footer_circle_size"
+            android:layout_height="@dimen/qs_footer_circle_size"
+            android:src="@drawable/ic_flashlight_off"
+            android:tint="?android:attr/textColorPrimary"
+            android:layout_marginHorizontal="@dimen/kg_widgets_horizontal_margin" />
+
+    </com.android.systemui.lockscreen.LockScreenWidgets>
+    
+</LinearLayout>
