@@ -456,8 +456,6 @@ public class OomAdjuster {
                 int tg;
                 if (group >= SCHED_GROUP_TOP_APP) {
                     tg = THREAD_GROUP_TOP_APP;
-                } else if (group < SCHED_GROUP_DEFAULT) {
-                    tg = THREAD_GROUP_BACKGROUND;
                 } else {
                     tg = THREAD_GROUP_DEFAULT;
                 }
@@ -3076,10 +3074,10 @@ public class OomAdjuster {
                             app.getWindowProcessController().onTopProcChanged();
                             // Switch UI pipeline for app to SCHED_FIFO
                             state.setSavedPriority(Process.getThreadPriority(app.getPid()));
-                            mService.scheduleAsFifoPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST, true);
+                            mService.scheduleAsFifoPriority(app.getPid(), 1, true);
                             setThreadPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST);
                             if (renderThreadTid != 0) {
-                                mService.scheduleAsFifoPriority(renderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST, /* suppressLogs */true);
+                                mService.scheduleAsFifoPriority(renderThreadTid, 1, /* suppressLogs */true);
                                 setThreadPriority(renderThreadTid, THREAD_PRIORITY_TOP_APP_BOOST);
                             }
                         }
@@ -3093,7 +3091,6 @@ public class OomAdjuster {
                             setThreadPriority(app.getPid(), state.getSavedPriority());
                             if (renderThreadTid != 0) {
                                 mService.scheduleAsRegularPriority(renderThreadTid, true); 
-                                setThreadPriority(renderThreadTid, THREAD_PRIORITY_DISPLAY);
                             }
                         } catch (Exception e) {
                             Slog.w(TAG,
@@ -3270,7 +3267,7 @@ public class OomAdjuster {
                 // {@link SCHED_GROUP_TOP_APP}. We don't check render thread because it
                 // is not ready when attaching.
                 app.getWindowProcessController().onTopProcChanged();
-                mService.scheduleAsFifoPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST, true);
+                mService.scheduleAsFifoPriority(app.getPid(), 1, true);
                 setThreadPriority(app.getPid(), THREAD_PRIORITY_TOP_APP_BOOST);
                 if (isScreenOnOrAnimatingLocked(state)) {
                     initialSchedGroup = SCHED_GROUP_TOP_APP;

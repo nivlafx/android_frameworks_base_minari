@@ -529,7 +529,7 @@ public class ActivityManagerService extends IActivityManager.Stub
             "persist.sys.device_provisioned";
 
     // indexed by SCHED_GROUP_* values
-    static final int[] CGROUP_CPU_SHARES = new int[] {512, 1024, 1024, 20480, 20480};
+    static final int[] CGROUP_CPU_SHARES = new int[] {512, 1024, 1024, 20480, 4096};
 
     static final String TAG = TAG_WITH_CLASS_NAME ? "ActivityManagerService" : TAG_AM;
     static final String TAG_BACKUP = TAG + POSTFIX_BACKUP;
@@ -4648,7 +4648,6 @@ public class ActivityManagerService extends IActivityManager.Stub
         }
 
         if (UserHandle.isApp(app.uid) || UserHandle.isIsolated(app.uid)) {
-            Process.setCgroupProcsProcessGroup(app.uid, app.getPid(), Process.THREAD_GROUP_BACKGROUND);
             Process.putProc(app.getPid(), app.uid);
         }
 
@@ -7861,7 +7860,6 @@ public class ActivityManagerService extends IActivityManager.Stub
             Process.setThreadScheduler(tid, Process.SCHED_OTHER, 0);
             int uid = Process.getUidForPid(tid);
             if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
-                Process.setCgroupProcsProcessGroup(uid, tid, Process.THREAD_GROUP_DEFAULT);
                 Process.putProc(tid, uid);
             }
             return true;
@@ -7889,15 +7887,6 @@ public class ActivityManagerService extends IActivityManager.Stub
         try {
             int uid = Process.getUidForPid(tid);
             if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
-                int tg;
-                if (prio <= THREAD_PRIORITY_TOP_APP_BOOST) {
-                    tg = Process.THREAD_GROUP_TOP_APP;
-                } else if (prio > THREAD_PRIORITY_DEFAULT) {
-                    tg = Process.THREAD_GROUP_BACKGROUND;
-                } else {
-                    tg = Process.THREAD_GROUP_DEFAULT;
-                }
-                Process.setCgroupProcsProcessGroup(uid, tid, tg);
                 Process.putThreadInRoot(tid);
             }
             Process.setThreadScheduler(tid, Process.SCHED_FIFO | Process.SCHED_RESET_ON_FORK, prio);
@@ -7939,7 +7928,7 @@ public class ActivityManagerService extends IActivityManager.Stub
                 // promote to FIFO now
                 if (proc.mState.getCurrentSchedulingGroup() == ProcessList.SCHED_GROUP_TOP_APP) {
                     if (DEBUG_OOM_ADJ) Slog.d("UI_FIFO", "Promoting " + tid + "out of band");
-                    scheduleAsFifoPriority(proc.getRenderThreadTid(), THREAD_PRIORITY_TOP_APP_BOOST, /*noLogs*/true);
+                    scheduleAsFifoPriority(proc.getRenderThreadTid(), 1, /*noLogs*/true);
                     setThreadPriority(proc.getRenderThreadTid(), THREAD_PRIORITY_TOP_APP_BOOST);
                 }
             }
