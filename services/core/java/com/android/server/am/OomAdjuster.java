@@ -1862,30 +1862,6 @@ public class OomAdjuster {
             foregroundActivities = true;
             hasVisibleActivities = true;
             procState = PROCESS_STATE_TOP;
-
-            if (UserHandle.isApp(appUid) || UserHandle.isIsolated(appUid)) {
-                if(mCurRenderThreadTid != app.getRenderThreadTid() && app.getRenderThreadTid() > 0) {
-                    mCurRenderThreadTid = app.getRenderThreadTid();
-                    mCurAppPid = app.getPid();
-                    int schedPrio;
-                    int tg;
-                    if (schedGroup >= SCHED_GROUP_TOP_APP) {
-                        tg = THREAD_GROUP_TOP_APP;
-                        schedPrio = THREAD_PRIORITY_TOP_APP_BOOST;
-                    } else {
-                        tg = THREAD_GROUP_DEFAULT;
-                        schedPrio = THREAD_PRIORITY_DEFAULT;
-                    }
-                    mService.scheduleAsFifoPriority(mCurAppPid, schedPrio, true);
-                    setThreadPriority(mCurAppPid, schedPrio);
-                    setCgroupProcsProcessGroup(appUid, mCurAppPid, tg);
-                    if (mCurRenderThreadTid != 0) {
-                        mService.scheduleAsFifoPriority(mCurRenderThreadTid, schedPrio, /* suppressLogs */true);
-                        setThreadPriority(mCurRenderThreadTid, schedPrio);
-                    }
-                }
-            }
-
             if (DEBUG_OOM_ADJ_REASON || logUid == appUid) {
                 reportOomAdjMessageLocked(TAG_OOM_ADJ, "Making top: " + app);
             }
