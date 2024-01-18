@@ -1588,6 +1588,13 @@ public final class RenderNode {
         nSetIsTextureView(mNativeRenderNode);
     }
 
+    /**
+     * Set whether this RenderNode needs to be traversed in prepareTree.
+     */
+    public void setIsUpdate(boolean isUpdata) {
+        nSetIsUpdate(mNativeRenderNode, isUpdata);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Animations
     ///////////////////////////////////////////////////////////////////////////
@@ -1924,4 +1931,7 @@ public final class RenderNode {
 
     @CriticalNative
     private static native void nSetIsTextureView(long renderNode);
+
+    @CriticalNative
+    private static native void nSetIsUpdate(long renderNode, boolean isUpdata);
 }

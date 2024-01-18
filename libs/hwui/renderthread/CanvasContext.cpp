@@ -427,6 +427,7 @@ void CanvasContext::prepareTree(TreeInfo& info, int64_t* uiFrameInfo, int64_t sy
     info.layerUpdateQueue = &mLayerUpdateQueue;
     info.damageGenerationId = mDamageId++;
     info.out.canDrawThisFrame = true;
+    info.enableTrimRenderNode = !RenderNode::sTraversalAll;
 
     mAnimationContext->startFrame(info.mode);
     for (const sp<RenderNode>& node : mRenderNodes) {
@@ -437,6 +438,7 @@ void CanvasContext::prepareTree(TreeInfo& info, int64_t* uiFrameInfo, int64_t sy
         node->prepareTree(info);
         GL_CHECKPOINT(MODERATE);
     }
+    RenderNode::sTraversalAll = false;
     mAnimationContext->runRemainingAnimations(info);
     GL_CHECKPOINT(MODERATE);
 

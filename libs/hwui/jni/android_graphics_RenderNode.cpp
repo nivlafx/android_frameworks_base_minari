@@ -86,6 +86,11 @@ static jboolean android_view_RenderNode_isValid(CRITICAL_JNI_PARAMS_COMMA jlong 
     return reinterpret_cast<RenderNode*>(renderNodePtr)->isValid();
 }
 
+static void android_view_RenderNode_nSetIsUpdate(CRITICAL_JNI_PARAMS_COMMA jlong renderNodePtr, jboolean isUpdate) {
+    RenderNode* renderNode = reinterpret_cast<RenderNode*>(renderNodePtr);
+    renderNode->setIsUpdate(isUpdate);
+}
+
 // ----------------------------------------------------------------------------
 // RenderProperties - setters
 // ----------------------------------------------------------------------------
@@ -770,6 +775,7 @@ static const JNINativeMethod gMethods[] = {
         // ----------------------------------------------------------------------------
         {"nDiscardDisplayList", "(J)V", (void*)android_view_RenderNode_discardDisplayList},
         {"nIsValid", "(J)Z", (void*)android_view_RenderNode_isValid},
+        {"nSetIsUpdate", "(JZ)V", (void*)android_view_RenderNode_nSetIsUpdate},
         {"nSetLayerType", "(JI)Z", (void*)android_view_RenderNode_setLayerType},
         {"nGetLayerType", "(J)I", (void*)android_view_RenderNode_getLayerType},
         {"nSetLayerPaint", "(JJ)Z", (void*)android_view_RenderNode_setLayerPaint},

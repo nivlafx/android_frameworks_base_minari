@@ -116,6 +116,13 @@ bool SkiaDisplayList::prepareListAndChildren(
 
     for (auto& child : mChildNodes) {
         RenderNode* childNode = child.getRenderNode();
+        if (info.enableTrimRenderNode) {
+            if (childNode->getIsUpdate()) {
+                childNode->setIsUpdate(false);
+            } else {
+                continue;
+            }
+        }
         Matrix4 mat4(child.getRecordedMatrix());
         info.damageAccumulator->pushTransform(&mat4);
         info.hasBackwardProjectedNodes = false;
@@ -138,6 +145,7 @@ bool SkiaDisplayList::prepareListAndChildren(
 
     bool isDirty = false;
     for (auto& animatedImage : mAnimatedImages) {
+        info.updateAlways = true;
         nsecs_t timeTilNextFrame = TreeInfo::Out::kNoAnimatedImageDelay;
         // If any animated image in the display list needs updated, then damage the node.
         if (animatedImage->isDirty(&timeTilNextFrame)) {
@@ -154,6 +162,7 @@ bool SkiaDisplayList::prepareListAndChildren(
     }
 
     for (auto& [vectorDrawable, cachedMatrix] : mVectorDrawables) {
+        info.updateAlways = true;
         // If any vector drawable in the display list needs update, damage the node.
         if (vectorDrawable->isDirty()) {
             Matrix4 totalMatrix;

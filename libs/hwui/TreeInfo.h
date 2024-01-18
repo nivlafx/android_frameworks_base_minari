@@ -133,6 +133,9 @@ public:
     // projected children.
     bool hasBackwardProjectedNodes = false;
     // TODO: Damage calculations
+
+    bool enableTrimRenderNode = false;
+    bool updateAlways = false;
 };
 
 } /* namespace uirenderer */

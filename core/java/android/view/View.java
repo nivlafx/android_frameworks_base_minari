@@ -22730,6 +22730,8 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
         if ((mPrivateFlags & PFLAG_DRAWING_CACHE_VALID) == 0
                 || !renderNode.hasDisplayList()
                 || (mRecreateDisplayList)) {
+            renderNode.setIsUpdate(true);
+
             // Don't need to recreate the display list, just need to tell our
             // children to restore/recreate theirs
             if (renderNode.hasDisplayList()

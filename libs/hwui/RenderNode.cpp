@@ -59,6 +59,8 @@ static int64_t generateId() {
     return sNextId++;
 }
 
+bool RenderNode::sTraversalAll = false;
+
 RenderNode::RenderNode()
         : mUniqueId(generateId())
         , mDirtyPropertyFields(0)
@@ -78,6 +80,7 @@ void RenderNode::setStagingDisplayList(DisplayList&& newData) {
     mValid = newData.isValid();
     mNeedsDisplayListSync = true;
     mStagingDisplayList = std::move(newData);
+    setIsUpdate(true);
 }
 
 void RenderNode::discardStagingDisplayList() {
@@ -275,9 +278,15 @@ void RenderNode::prepareTreeImpl(TreeObserver& observer, TreeInfo& info, bool fu
                        bool functorsNeedLayer) {
                     child->prepareTreeImpl(observer, info, functorsNeedLayer);
                     mHasHolePunches |= child->hasHolePunches();
+                    mIsUpdate |= child->getIsUpdate();
                 });
         if (isDirty) {
             damageSelf(info);
+        }
+        if (info.updateAlways || animators().hasAnimators() || mProperties.getProjectBackwards()
+            || CC_UNLIKELY(mPositionListener.get())) {
+            setIsUpdate(true);
+            info.updateAlways = false;
         }
     } else {
         mHasHolePunches = false;

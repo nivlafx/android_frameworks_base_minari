@@ -137,7 +137,14 @@ public:
         return mDirtyPropertyFields & field;
     }
 
-    void setPropertyFieldsDirty(uint32_t fields) { mDirtyPropertyFields |= fields; }
+    void setIsUpdate(bool isUpdate) { mIsUpdate = isUpdate; }
+    bool getIsUpdate() const { return mIsUpdate; }
+    static bool sTraversalAll;
+
+    void setPropertyFieldsDirty(uint32_t fields) {
+        mDirtyPropertyFields |= fields;
+        setIsUpdate(true);
+    }
 
     const RenderProperties& properties() const { return mProperties; }
 
@@ -199,6 +206,7 @@ public:
     void setPositionListener(PositionListener* listener) {
         mStagingPositionListener = listener;
         mPositionListenerDirty = true;
+        sTraversalAll = true;
     }
 
     // This is only modified in MODE_FULL, so it can be safely accessed
@@ -421,6 +429,8 @@ private:
         SkPath clippedOutline;
     };
     mutable ClippedOutlineCache mClippedOutlineCache;
+
+    bool mIsUpdate = true;
 };  // class RenderNode
 
 class MarkAndSweepRemoved : public TreeObserver {
