@@ -454,10 +454,20 @@ public class OomAdjuster {
             }
             try {
                 int tg;
-                if (group >= SCHED_GROUP_TOP_APP) {
-                    tg = THREAD_GROUP_TOP_APP;
-                } else {
-                    tg = THREAD_GROUP_DEFAULT;
+                switch (group) {
+                    case SCHED_GROUP_BACKGROUND:
+                        tg = THREAD_GROUP_BACKGROUND;
+                        break;
+                    case SCHED_GROUP_TOP_APP:
+                    case SCHED_GROUP_TOP_APP_BOUND:
+                        tg = THREAD_GROUP_TOP_APP;
+                        break;
+                    case SCHED_GROUP_RESTRICTED:
+                        tg = THREAD_GROUP_RESTRICTED;
+                        break;
+                    default:
+                        tg = THREAD_GROUP_DEFAULT;
+                        break;
                 }
                 setCgroupProcsProcessGroup(app.info.uid, pid, tg);
             } catch (Exception e) {
@@ -3090,7 +3100,7 @@ public class OomAdjuster {
                                     /* suppressLogs */ true);
                             setThreadPriority(app.getPid(), state.getSavedPriority());
                             if (renderThreadTid != 0) {
-                                mService.scheduleAsRegularPriority(renderThreadTid, true); 
+                                mService.scheduleAsRegularPriority(renderThreadTid, true);
                             }
                         } catch (Exception e) {
                             Slog.w(TAG,
@@ -3505,10 +3515,10 @@ public class OomAdjuster {
         final ProcessStateRecord state = app.mState;
         // Use current adjustment when freezing, set adjustment when unfreezing.
         if (state.getCurAdj() >= CACHED_APP_MIN_ADJ && !opt.isFrozen()
-                && !opt.shouldNotFreeze() && !mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app) 
+                && !opt.shouldNotFreeze() && !mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app)
                 && !mCachedAppOptimizer.isProcessFrozen(app.getPid())) {
             mCachedAppOptimizer.freezeAppAsyncLSP(app);
-        } else if (state.getSetAdj() < CACHED_APP_MIN_ADJ || mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app) 
+        } else if (state.getSetAdj() < CACHED_APP_MIN_ADJ || mCachedAppOptimizer.mFreezerProcessPolicies.isProcessInteractive(app)
             || mCachedAppOptimizer.isProcessFrozen(app.getPid())) {
             mCachedAppOptimizer.unfreezeAppLSP(app,
                     CachedAppOptimizer.getUnfreezeReasonCodeFromOomAdjReason(oomAdjReason));

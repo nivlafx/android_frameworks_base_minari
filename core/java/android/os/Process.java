@@ -1146,7 +1146,7 @@ public class Process {
     /**
     * @hide
     */
-    public static final native void putProc(int pid, int uid)
+    public static final native void putProc(int pid)
             throws IllegalArgumentException, SecurityException;
 
     /**

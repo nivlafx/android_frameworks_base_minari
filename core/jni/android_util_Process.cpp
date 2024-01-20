@@ -644,16 +644,16 @@ void android_os_Process_putThreadInRoot(JNIEnv* jni, jclass clazz, jint tid) {
     }
 }
 
-void android_os_Process_putProc(JNIEnv* jni, jclass clazz, jint pid, jint uid) {
+void android_os_Process_putProc(JNIEnv* jni, jclass clazz, jint pid) {
     const char* baseDir = "/dev/cpuctl/";
     const char* filename = "cgroup.procs";
     
     char buf[PATH_MAX];
-    snprintf(buf, sizeof(buf), "%sapp_uid_%d/", baseDir, uid);
+    snprintf(buf, sizeof(buf), "%sapp_uid_%d/", baseDir, uid_from_pid(pid));
 
     int ret = mkdir(buf, 0755);
     if (ret == 0 || errno == EEXIST) {
-        snprintf(buf, sizeof(buf), "%sapp_uid_%d/%s", baseDir, uid, filename);
+        snprintf(buf, sizeof(buf), "%sapp_uid_%d/%s", baseDir, uid_from_pid(pid), filename);
 
         int fd = open(buf, O_WRONLY | O_CLOEXEC);
         if (fd != -1) {
@@ -1426,7 +1426,7 @@ static const JNINativeMethod methods[] = {
         {"setThreadGroupAndCpuset", "(II)V", (void*)android_os_Process_setThreadGroupAndCpuset},
         {"setCgroupProcsProcessGroup", "(III)V", (void*)android_os_Process_setCgroupProcsProcessGroup},
         {"putThreadInRoot", "(I)V", (void*)android_os_Process_putThreadInRoot},
-        {"putProc", "(II)V", (void*)android_os_Process_putProc},
+        {"putProc", "(I)V", (void*)android_os_Process_putProc},
         {"setUidPrio", "(II)V", (void*)android_os_Process_setUidPrio},
         {"setProcessGroup", "(II)V", (void*)android_os_Process_setProcessGroup},
         {"getProcessGroup", "(I)I", (void*)android_os_Process_getProcessGroup},

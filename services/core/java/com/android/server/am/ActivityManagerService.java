@@ -529,7 +529,7 @@ public class ActivityManagerService extends IActivityManager.Stub
             "persist.sys.device_provisioned";
 
     // indexed by SCHED_GROUP_* values
-    static final int[] CGROUP_CPU_SHARES = new int[] {512, 1024, 1024, 20480, 4096};
+    static final int[] CGROUP_CPU_SHARES = new int[] {1024, 1024, 1024, 20480, 20480};
 
     static final String TAG = TAG_WITH_CLASS_NAME ? "ActivityManagerService" : TAG_AM;
     static final String TAG_BACKUP = TAG + POSTFIX_BACKUP;
@@ -4648,7 +4648,7 @@ public class ActivityManagerService extends IActivityManager.Stub
         }
 
         if (UserHandle.isApp(app.uid) || UserHandle.isIsolated(app.uid)) {
-            Process.putProc(app.getPid(), app.uid);
+            Process.putProc(app.getPid());
         }
 
         // Tell the process all about itself.
@@ -7860,7 +7860,7 @@ public class ActivityManagerService extends IActivityManager.Stub
             Process.setThreadScheduler(tid, Process.SCHED_OTHER, 0);
             int uid = Process.getUidForPid(tid);
             if (UserHandle.isApp(uid) || UserHandle.isIsolated(uid)) {
-                Process.putProc(tid, uid);
+                Process.putProc(tid);
             }
             return true;
         } catch (IllegalArgumentException e) {
@@ -20330,11 +20330,11 @@ public class ActivityManagerService extends IActivityManager.Stub
             return mIsSwipeToScrenshotEnabled && SystemProperties.getBoolean("sys.android.screenshot", false);
         }
     }
-    
+
     public boolean shouldSkipBootCompletedBroadcastForPackage(ApplicationInfo info) {
         return getAppOpsManager().checkOpNoThrow(
                 AppOpsManager.OP_RUN_ANY_IN_BACKGROUND,
-                info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED 
+                info.uid, info.packageName) != AppOpsManager.MODE_ALLOWED
                 && !mOomAdjuster.mCachedAppOptimizer.mFreezerProcessPolicies.isPkgInteractive(info.packageName);
     }
 
