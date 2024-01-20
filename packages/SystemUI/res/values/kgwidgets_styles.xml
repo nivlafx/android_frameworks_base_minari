@@ -14,12 +14,13 @@
      See the License for the specific language governing permissions and
      limitations under the License.
 -->
-<resources>
-	<dimen name="kg_widget_margin_vertical">10dp</dimen>
-    <dimen name="kg_widgets_margin_horizontal">10dp</dimen>
-    <dimen name="kg_widgets_main_margin_start">16dp</dimen>
-    <dimen name="kg_widgets_main_margin_end">8dp</dimen>
-    <dimen name="kg_widget_circle_size">64dp</dimen>
-    <dimen name="kg_widgets_icon_padding">22dp</dimen>
-    <dimen name="kg_main_widgets_icon_padding">14dp</dimen>
+<resources xmlns:androidprv="http://schemas.android.com/apk/prv/res/android">
+    <style name="Theme.LockscreenWidgets.SystemUI" parent="@style/Theme.MaterialComponents.DayNight">
+        <item name="android:fontFamily">@*android:string/config_bodyFontFamily</item>
+        <item name="android:elevation">0dp</item>
+    </style>
+	<style name="LockscreenWidgetsBackgroundOverlay" parent="">
+		<item name="cornerFamily">rounded</item>
+		<item name="cornerSize">100dp</item>
+	</style>
 </resources>

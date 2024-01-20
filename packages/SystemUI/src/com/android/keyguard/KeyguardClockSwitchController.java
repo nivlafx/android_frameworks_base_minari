@@ -62,6 +62,8 @@ import com.android.systemui.statusbar.notification.PropertyAnimator;
 import com.android.systemui.statusbar.notification.stack.AnimationProperties;
 import com.android.systemui.statusbar.phone.NotificationIconAreaController;
 import com.android.systemui.statusbar.phone.NotificationIconContainer;
+import com.android.systemui.statusbar.policy.ConfigurationController;
+import com.android.systemui.statusbar.policy.FlashlightController;
 import com.android.systemui.util.ViewController;
 import com.android.systemui.util.concurrency.DelayableExecutor;
 import com.android.systemui.util.settings.SecureSettings;
@@ -90,6 +92,8 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
     private final LogBuffer mLogBuffer;
     private final ContentResolver mCR;
     private final ActivityStarter mActivityStarter;
+    private final ConfigurationController mConfigurationController;
+    private final FlashlightController mFlashlightController;
 
     private FrameLayout mSmallClockFrame; // top aligned clock
     private FrameLayout mLargeClockFrame; // centered clock
@@ -175,7 +179,9 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
             @KeyguardClockLog LogBuffer logBuffer,
             KeyguardInteractor keyguardInteractor,
             FeatureFlags featureFlags,
-            ActivityStarter activityStarter) {
+            ActivityStarter activityStarter,
+            ConfigurationController configurationController,
+            FlashlightController flashlightController) {
         super(keyguardClockSwitch);
         mStatusBarStateController = statusBarStateController;
         mClockRegistry = clockRegistry;
@@ -192,6 +198,8 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         mView.setLogBuffer(mLogBuffer);
         mFeatureFlags = featureFlags;
         mActivityStarter = activityStarter;
+        mConfigurationController = configurationController;
+        mFlashlightController = flashlightController;
         mKeyguardInteractor = keyguardInteractor;
 
         mClockChangedListener = new ClockRegistry.ClockChangeListener() {
@@ -244,6 +252,8 @@ public class KeyguardClockSwitchController extends ViewController<KeyguardClockS
         View kgWidgets = mCustomClockFrame.findViewById(R.id.keyguard_widgets);
         LockScreenWidgets lsWidgets = mCustomClockFrame.findViewById(R.id.lockscreen_widgets);
         lsWidgets.setActivityStarter(mActivityStarter);
+        lsWidgets.setConfigurationController(mConfigurationController);
+        lsWidgets.setFlashLightController(mFlashlightController);
 
         if (!mOnlyClock) {
             mDumpManager.unregisterDumpable(getClass().toString()); // unregister previous clocks
