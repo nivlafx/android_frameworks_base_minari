@@ -288,7 +288,8 @@ class IslandView : ExtendedFloatingActionButton {
         notifTitle = notifTitle.replaceFirstChar {
             if (it.isLowerCase()) it.titlecase() else it.toString() 
         }
-        val regexPattern = Regex("\\b$notifTitle\\s*:")
+        val escapedNotifTitle = Regex.escapeReplacement(notifTitle)
+        val regexPattern = Regex("\\b$escapedNotifTitle\\s*:")
         val notifContent = content.replaceFirst(regexPattern, "").trim()
         return "$notifTitle$splitter$notifContent"
     }
